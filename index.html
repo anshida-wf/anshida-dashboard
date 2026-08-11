@@ -216,8 +216,17 @@ tbody tr:hover{background:#F7FAFD}
 @media(max-width:1300px){.loop{grid-template-columns:repeat(2,1fr)}
   .ob .og,.lvc .lg2{grid-template-columns:1fr}}
 </style>
-</head>
-<body><div class="wrap">
+<style>
+#gate{position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1F3A5F,#0F6E56);display:flex;align-items:center;justify-content:center;font-family:-apple-system,'Microsoft YaHei',sans-serif}
+#gate .box{background:#fff;border-radius:14px;padding:30px 34px;width:320px;box-shadow:0 12px 40px rgba(0,0,0,.35);text-align:center}
+#gate h2{margin:0 0 6px;color:#1F3A5F;font-size:19px}
+#gate p{margin:0 0 18px;color:#555;font-size:13px}
+#gate input{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #ccd;border-radius:8px;font-size:15px;margin-bottom:12px}
+#gate button{width:100%;padding:11px;border:0;border-radius:8px;background:#2E5C8A;color:#fff;font-size:15px;cursor:pointer}
+#gate button:hover{background:#1F3A5F}
+#gate .err{color:#A32D2D;font-size:12px;min-height:16px;margin-top:8px}
+</style></head>
+<body><div id="gate"><div class="box"><h2>安时达增值延保诊断看板</h2><p>请输入访问口令</p><input id="gatePwd" type="password" placeholder="访问口令" autofocus /><button onclick="gateCheck()">进入</button><div class="err" id="gateErr"></div></div></div><div class="wrap">
 
 <div class="hero">
   <h1>增值延保 · 过程指标归因诊断看板</h1>
@@ -1544,5 +1553,13 @@ render();
 (function(){ const i=curProgressInfo(); const el=document.getElementById("stampDate");
   if(el && i.y){ el.textContent=i.y+"-"+String(i.m).padStart(2,"0")+"-"+String(i.day).padStart(2,"0"); } })();
 </script>
-</body>
+<script>
+(function(){
+  var HASH="fbe052721f8f287cf96d25f3513eb973e494c874b92292213be3a5f7f9ba55dc";
+  function sha256(s){return crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)).then(function(b){return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,"0")}).join("")})}
+  window.gateCheck=function(){var p=document.getElementById("gatePwd").value;sha256(p).then(function(h){if(h===HASH){try{sessionStorage.setItem("gate","1")}catch(e){}var g=document.getElementById("gate");if(g)g.style.display="none"}else{var e=document.getElementById("gateErr");if(e)e.textContent="口令错误，请重试"}})};
+  var i=document.getElementById("gatePwd");if(i)i.addEventListener("keydown",function(e){if(e.key==="Enter")gateCheck()});
+  try{if(sessionStorage.getItem("gate")==="1"){var g=document.getElementById("gate");if(g)g.style.display="none"}}catch(e){}
+})();
+</script></body>
 </html>
