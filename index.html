@@ -562,6 +562,8 @@ function curProgress(){
   const d=DATA[last];
   return (d && d.progress) ? d.progress : 0;          // 未完（最新月）→ 实际进度
 }
+// 需求5 时间进度口径：汇总表/延保归因/结果与过程看板统一取此值（已完月=100%，最新月=数据源实际进度）
+function timeProgress(){ return curProgress(); }
 // 所选月份总天数（用于日均工单量 = 工单量 ÷ 总天数，向上取整）
 function totalDays(keys){
   return keys.reduce((s,k)=>{const p=k.split("-");const y=parseInt(p[0],10),m=parseInt(p[1],10);
@@ -1117,7 +1119,7 @@ function renderSummary(){
   const rows=ents.map(entMetrics);
   rows.sort((a,b)=>b.tot-a.tot);
   let th=`<thead><tr><th class="tl">大区/办事处</th><th>延保完成率</th><th>增值完成率</th><th>整体完成率</th>`
-    +`<th>时间进度</th><th>进度差额</th><th class="clk">延保可挽回/月 ⇄延保</th><th class="clk">增值可挽回/月 ⇄增值</th><th>合计可挽回</th></tr></thead><tbody>`;
+    +`<th>时间进度</th><th>进度差额</th><th class="clk">延保可挽回/月(含华为) ⇄延保</th><th class="clk">增值可挽回/月 ⇄增值</th><th>合计可挽回</th></tr></thead><tbody>`;
   th+=rows.map(x=>{
     const gap=(x.allZZ-tp)*100;
     return `<tr>
