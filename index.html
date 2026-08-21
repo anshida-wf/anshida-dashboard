@@ -432,14 +432,9 @@ tbody tr:hover{background:#F7FAFD}
     <div id="rpVerdict"></div>
   </div>
   <div class="card" style="margin-top:14px">
-    <h2>① 完成率月度走势表 · 延保 / 增值 / 整体 vs 时间进度</h2>
-    <div class="note">纵向按月份展开，累计口径（第 N 月完成率 = 1~N 月累计回款 ÷ 累计任务）。「整体 vs 进度」= 该月整体完成率 − 时间进度，<b>正=领先、负=落后</b>。</div>
-    <div style="overflow-x:auto"><table class="mtable" id="rpCompletionTable"></table></div>
-  </div>
-  <div class="card" style="margin-top:14px">
-    <h2>② 关键过程指标月度走势表</h2>
-    <div class="note">成交率 / 客单价 / 单产是完成率的<b>领先指标</b>，通常领先 1~2 个月传导。纵向按月份展开，环比为正=改善。</div>
-    <div style="overflow-x:auto"><table class="mtable" id="rpProcessTable"></table></div>
+    <h2>① 月度指标整合走势表 · 完成率 + 过程指标 + 每月结论诊断</h2>
+    <div class="note">纵向按月份展开：完成率列为累计口径（N 月完成率 = 1~N 月累计回款 ÷ 累计任务），过程指标为领先指标（领先完成率 1~2 个月传导）。<b>「时间进度」「整体 vs 进度」两列已移除</b>，相关判定并入新增的「每月结论诊断」列（领先/落后幅度 + 主拖累线）。</div>
+    <div style="overflow-x:auto"><table class="mtable" id="rpMergedTable"></table></div>
   </div>
   <div class="card" style="margin-top:14px">
     <h2>数据缺口标注 · 过程前移的治理目标</h2>
@@ -1687,6 +1682,8 @@ function kbList(){
     (KBF.biz==="all"||x.biz===KBF.biz)&&(KBF.cat==="all"||x.cat===KBF.cat)&&
     (KBF.scene==="all"||x.scene===KBF.scene)&&
     (!q||JSON.stringify(x).toLowerCase().indexOf(q)>=0));
+  // 需求：场景剧本库彩电品类(cat==="彩电")置顶优先展示，保持原ID顺序（稳定排序，其余品类原序跟随）
+  list.sort((a,b)=> (b.cat==="彩电")-(a.cat==="彩电"));
   document.getElementById("kbScCnt").textContent="· 命中 "+list.length+" / 共 "+KB.scripts.length+" 条";
   document.getElementById("kbScripts").innerHTML=list.length?list.map(scriptCard).join(""):
     '<div class="note" style="padding:20px 0;text-align:center">没有命中的剧本。放宽筛选，或提交一条新剧本填补这个场景空白。</div>';
@@ -1736,25 +1733,33 @@ function renderRP(){
       ybCj:ybW>0?ybC/ybW:0, ybPrice:ybC>0?ybMall/ybC:0,
       ybZZ:ybTask>0?ybHui/ybTask:0, zzZZ:zzTask0>0?zzHui/zzTask0:0,
       zzPP:zzGong>0?zzHui/zzGong:0, allZZ:allTask>0?allHui/allTask:0,
+      allHui:allHui, allTask:allTask,
       hwCj:hwGong>0?hwOrd/hwGong:0};
   }
   const ma=keys.map(monthAgg).filter(Boolean);
   const n=ma.length, last=n-1;
-  // 时间进度累计轨迹：每月末累计取值天数 ÷ 累计总天数（末尾=当前累计时间进度）
-  const tdAll=totalDays(keys);
-  let cumD=0; const progArr=ma.map(m=>{cumD+=monthValueDays(m.k); return tdAll>0?cumD/tdAll:0;});
-  const tpLast=progArr[last];
+  const daysInMonth=k=>{const p=k.split("-"); return new Date(+p[0], +p[1], 0).getDate();};
+  // 区间汇总口径（严格联动，姐姐 Round H 选定）：Σ区间内各月回款 ÷ Σ区间内各月任务
+  // 源数据按「当月文件」独立统计（各月 own 回款/任务，非 YTD 累计），故区间汇总 = 区间内各月直接求和，
+  // 随起止月刷新：如 8月=44.4%、5~8月≈81.5%、1~8月≈89.0%，三者各不相同。
+  let sumH=0, sumT=0;
+  for(const m of ma){ sumH+=m.allHui; sumT+=m.allTask; }
+  const rangeZZ = sumT>0? sumH/sumT : 0;
+  // 区间时间进度：区间内各月取值天数 ÷ 各月总天数
+  let pd=0, td=0;
+  for(const m of ma){ pd+=monthValueDays(m.k); td+=daysInMonth(m.k); }
+  const rangeTP = td>0? pd/td : 0;
 
   // ---- 诊断结论（结论先行，精简）----
-  const allLast=ma[last].allZZ, ybLast=ma[last].ybZZ, zzLast=ma[last].zzZZ;
-  const leadAll=allLast-tpLast;
+  const ybLast=ma[last].ybZZ, zzLast=ma[last].zzZZ;
+  const leadAll=rangeZZ-rangeTP;
   const leadTxt=leadAll>=0?"领先":"落后";
   const leadColor=leadAll>=0?"#0F6E56":"#A32D2D";
   const dragLine= ybLast <= zzLast ? "延保" : "增值";
   const dragDiff=Math.abs(ybLast-zzLast)*100;
   const vCards=[
-    {k:"整体完成率", v:fmtP(allLast), c:leadColor},
-    {k:"时间进度", v:fmtP(tpLast), c:"#5A6774"},
+    {k:"整体完成率", v:fmtP(rangeZZ), c:leadColor},
+    {k:"时间进度", v:fmtP(rangeTP), c:"#5A6774"},
     {k:"领先/落后", v:(leadAll>=0?"+":"")+(leadAll*100).toFixed(1)+"pp", c:leadColor}
   ];
   let vd=`<div style="display:flex;flex-wrap:wrap;gap:12px">
@@ -1768,34 +1773,27 @@ function renderRP(){
   </div>`;
   document.getElementById("rpVerdict").innerHTML=vd;
 
-  // ---- ① 完成率月度走势表（纵向：月份为行）----
-  const gapCls=v=>v>=0?"gap-ok":"gap-bad";
-  let ct=`<thead><tr><th class="tl">月份</th><th>延保完成率</th><th>增值完成率</th><th>整体完成率</th><th>时间进度</th><th>整体 vs 进度</th></tr></thead><tbody>`;
-  ma.forEach((m,i)=>{
-    const g=m.allZZ-progArr[i];
-    ct+=`<tr>
+  // ---- 整合走势表（合并完成率 + 过程指标 + 每月结论诊断）----
+  let mt=`<thead><tr><th class="tl">月份</th><th>延保完成率</th><th>增值完成率</th><th>整体完成率</th><th>延保成交率</th><th>华为成交率</th><th>延保客单价</th><th>增值单工单产出</th><th class="tl">每月结论诊断</th></tr></thead><tbody>`;
+  ma.forEach((m)=>{
+    const monthTP = daysInMonth(m.k)>0? monthValueDays(m.k)/daysInMonth(m.k):0;
+    const g=m.allZZ-monthTP;
+    const lead=g>=0?"领先":"落后";
+    const drag=m.ybZZ<=m.zzZZ?"延保":"增值";
+    const diag=`<b style="color:${g>=0?'#0F6E56':'#A32D2D'}">${lead} ${(Math.abs(g)*100).toFixed(1)}pp</b>｜主拖累：${drag}`;
+    mt+=`<tr>
       <td class="tl nm">${m.k.split("-")[1]}月</td>
       <td class="mono">${fmtP(m.ybZZ)}</td>
       <td class="mono">${fmtP(m.zzZZ)}</td>
       <td class="mono">${fmtP(m.allZZ)}</td>
-      <td class="mono">${fmtP(progArr[i])}</td>
-      <td class="mono ${gapCls(g)}">${g>=0?"+":""}${(g*100).toFixed(1)}pp</td></tr>`;
-  });
-  ct+=`</tbody>`;
-  document.getElementById("rpCompletionTable").innerHTML=ct;
-
-  // ---- ② 关键过程指标月度走势表（纵向：月份为行）----
-  let pt=`<thead><tr><th class="tl">月份</th><th>延保成交率</th><th>华为成交率</th><th>延保客单价</th><th>增值单工单产出</th></tr></thead><tbody>`;
-  ma.forEach(m=>{
-    pt+=`<tr>
-      <td class="tl nm">${m.k.split("-")[1]}月</td>
       <td class="mono">${fmtP(m.ybCj)}</td>
       <td class="mono">${fmtP(m.hwCj)}</td>
       <td class="mono">¥${Math.round(m.ybPrice)}</td>
-      <td class="mono">¥${m.zzPP.toFixed(1)}</td></tr>`;
+      <td class="mono">¥${m.zzPP.toFixed(1)}</td>
+      <td class="tl">${diag}</td></tr>`;
   });
-  pt+=`</tbody>`;
-  document.getElementById("rpProcessTable").innerHTML=pt;
+  mt+=`</tbody>`;
+  document.getElementById("rpMergedTable").innerHTML=mt;
 }
 function render(){
   RXCTX=[];
