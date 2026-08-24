@@ -940,7 +940,7 @@ function renderHW(){
   const totGong=rows.reduce((s,r)=>s+r.gong,0);
   const totHui=rows.reduce((s,r)=>s+r.hui,0);
   const totCj=totGong>0? rows.reduce((s,r)=>s+r.cj*r.gong,0)/totGong : 0;
-  // 需求4：所选大区华为智慧屏安装工单=0 时，隐藏「华为延保专项」整个卡片
+  // 条件2（递进）：当前 REG 范围的华为智慧屏安装工单=0 时，隐藏「华为延保专项」+「华为延保诊断表」整个卡片（两模块同容器 hwCard）
   const hwCard=document.getElementById("hwCard");
   if(totGong===0){ hwCard.style.display="none"; return; }
   hwCard.style.display="";
@@ -965,10 +965,17 @@ function renderHW(){
   const cmpTitle="各大区 华为成交率（加权）";
   document.getElementById("hwCmp").innerHTML=barChartSVG(cmpTitle,items,base,fmtP,"#1F3A5F");
 
-  // 诊断表：恒展示全国各大区（不随左侧大区筛选变化、不展开办事处）
-  const diags=agg.map(a=>{const rs=all.filter(r=>r.reg===a.reg);
-    const pot=rs.reduce((s,r)=>s+Math.max(0,base-r.cj)*r.gong*r.price,0);   // 可挽回=逐办求和，与汇总表一致
-    return {label:a.reg, cj:a.cj, ord:a.ord, hui:a.hui, gong:a.gong, gap:Math.max(0,base-a.cj), pot:pot};});
+  // 诊断表：跟随 REG 联动（条件1）—— 全部→各大区、某大区→该大区各办事处
+  let diags;
+  if(REG==="all"){
+    diags=agg.map(a=>{const rs=all.filter(r=>r.reg===a.reg);
+      const pot=rs.reduce((s,r)=>s+Math.max(0,base-r.cj)*r.gong*r.price,0);   // 可挽回=逐办求和，与汇总表一致
+      return {label:a.reg, cj:a.cj, ord:a.ord, hui:a.hui, gong:a.gong, gap:Math.max(0,base-a.cj), pot:pot};});
+  } else {
+    const rs=all.filter(r=>r.reg===REG);   // 该大区各办事处
+    diags=rs.map(r=>({label:r.name, cj:r.cj, ord:r.ord, hui:r.hui, gong:r.gong,
+      gap:Math.max(0,base-r.cj), pot:Math.max(0,base-r.cj)*r.gong*r.price}));
+  }
   diags.sort((x,y)=>y.pot-x.pot);
   let th=`<thead><tr><th class="tl">大区/办事处</th><th>华为成交率</th><th>华为延保订单</th>
     <th>安装工单</th><th>vs 基准</th><th>可挽回估算/月</th><th class="tl">诊断</th></tr></thead><tbody>`;
