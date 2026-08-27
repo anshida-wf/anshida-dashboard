@@ -755,14 +755,17 @@ function aggDataOutlet(keys){
   for(const key in acc){
     const a=acc[key];
     const cc=a.W>0?a.ord7/a.W:0;
-    const ybHui=a.ybC+a.ybH;
-    const mallP=a.ord7>0?a.ybC/a.ord7:0;        // 商城延保均价 = 商城延保回款/商城延保订单（元）
+    const amt=a.ybC+a.ybH;                  // 延保成交金额 = 延保实际回款（商城col22+华为col23，元；对标 aggData.amt=col7）
+    const mallP=a.ord7>0?a.ybC/a.ord7:0;    // 商城延保均价（近似=商城回款/商城订单；网点表无 col25 定价列）
+    const pp=a.ord7>0?amt/a.ord7:0;         // 实际客单价反推（对标 aggData.pp=amt/c）
+    const zzZZ=0;                           // 网点无任务额 → 完成率 0（UI 层隐藏完成率卡片）
     const allHui=a.ybC+a.ybH+a.zz;
-    const hcj=a.hgong>0?a.hord/a.hgong:0;          // 华为成交率 = 华为订单/华为安装工单
+    const hcj=a.hgong>0?a.hord/a.hgong:0;   // 华为成交率 = 华为订单/华为安装工单
     const hprice=a.hord>0?a.hhui/a.hord:0;
     allHuiTot+=allHui; zzHuiTot+=a.zz;
-    RAW.push([a.name,a.reg,0,0,[a.W,cc,0,ybHui,mallP],[0,0,0],[0,0,0,0,0,0,allHui]]);
-    RAW_Z.push([a.name,a.reg,a.zz,0,a.gong,a.ac,a.ad,a.ai,0,0,a.gz,a.zb,0]);
+    // 逐位对齐 aggData：RAW=[name,reg,pilot, [W,cc,pp,amt,mallP], [zzZZ,0,0], [ybZZ,zzZZ,allZZ,ybTask,zzTask,allTask,allHui]]
+    RAW.push([a.name,a.reg,0,[a.W,cc,pp,amt,mallP],[zzZZ,0,0],[0,zzZZ,0,0,0,0,allHui]]);
+    RAW_Z.push([a.name,a.reg,a.zz,zzZZ,a.gong,a.ac,a.ad,a.ai,0,0,a.gz,a.zb,0]);
     RAW_HW.push([a.name,a.reg,hcj,a.hord,a.hgong,a.hhui,hprice,a.hGj]);
   }
   G={ybZZ:0,ybTask:0,ybHui:0,allZZ:0,allHui:allHuiTot,allTask:0,zzHui:zzHuiTot,zzTask:0,nM:Math.max(1,keys.length)};
@@ -1021,7 +1024,7 @@ function renderYB(){
       <td class="mono">${fmtN(x.W)}</td>
       <td class="mono">${avgDaily.toFixed(1)}</td>
       ${cell(x.cc,bm.c,fmtP)}${cell(x.p,bm.p,v=>"¥"+Math.round(v))}
-      <td class="mono">${fmtP(x.ybzz)}</td>
+      <td class="mono">${x.ybTask>0?fmtP(x.ybzz):"—"}</td>
       <td class="mono">${fmtP(tp)}</td>
       <td class="mono ${gapAmt>=0?'gap-ok':'gap-bad'}">${fmtAmt(gapAmt)}</td>
       <td><span class="tag ${R.cls}">${R.tag}</span></td>
@@ -1253,7 +1256,7 @@ function renderZZ(){
     return `<tr><td class="tl nm">${x.name}${drillCell(x.name)}</td><td class="rg">${x.reg}</td>
       <td class="mono">${fmtN(x.gong)}</td>
       <td class="mono">${avgDaily.toFixed(1)}</td>
-      <td class="mono ${x.zz<basePP?"gap-bad":"gap-ok"}">${(x.zz*100).toFixed(1)}%</td>
+      <td class="mono ${x.zz<basePP?"gap-bad":"gap-ok"}">${x.zzTask>0?(x.zz*100).toFixed(1)+"%":"—"}</td>
       <td class="mono">${fmtP(tp)}</td>
       <td class="mono ${gapAmt>=0?'gap-ok':'gap-bad'}">${fmtAmt(gapAmt)}</td>
       <td class="mono ${x.pp<basePP?"gap-bad":"gap-ok"}">¥${x.pp.toFixed(1)}</td>
@@ -1306,7 +1309,7 @@ function renderSummary(){
     const ybGain=ybRs.reduce((s,r)=>s+diagnose(r,ybBm).total,0);   // 纯延保可挽回（不含华为）
     const hwGain=hwRs.reduce((s,r)=>s+Math.max(0,hwBm-r.cj)*r.gong*r.price,0);   // 华为可挽回（单独列）
     const zzPot=zzRs.reduce((s,r)=>s+r.gong*Math.max(0,basePP-r.pp),0);   // 增值可挽回
-    return {name,reg:isReg?name:(zzRs[0]?zzRs[0].reg:""),ybZZ,zzZZ,allZZ,allTask,ybGain,hwGain,zzPot,tot:ybGain+hwGain+zzPot};
+    return {name,reg:isReg?name:(zzRs[0]?zzRs[0].reg:""),ybZZ,zzZZ,allZZ,ybTask,zzTask,allTask,ybGain,hwGain,zzPot,tot:ybGain+hwGain+zzPot};
   }
   const rows=ents.map(entMetrics);
   rows.sort((a,b)=>b.tot-a.tot);
@@ -1316,9 +1319,9 @@ function renderSummary(){
     const gapAmt=(x.allZZ-tp)*x.allTask;
     return `<tr>
       <td class="tl nm">${x.name}</td>
-      <td class="mono ${x.ybZZ<tp?'gap-bad':'gap-ok'}">${fmtP(x.ybZZ)}</td>
-      <td class="mono ${x.zzZZ<tp?'gap-bad':'gap-ok'}">${fmtP(x.zzZZ)}</td>
-      <td class="mono ${x.allZZ<tp?'gap-bad':'gap-ok'}">${fmtP(x.allZZ)}</td>
+      <td class="mono ${x.ybZZ<tp?'gap-bad':'gap-ok'}">${x.ybTask>0?fmtP(x.ybZZ):"—"}</td>
+      <td class="mono ${x.zzZZ<tp?'gap-bad':'gap-ok'}">${x.zzTask>0?fmtP(x.zzZZ):"—"}</td>
+      <td class="mono ${x.allZZ<tp?'gap-bad':'gap-ok'}">${x.allTask>0?fmtP(x.allZZ):"—"}</td>
       <td class="mono">${fmtP(tp)}</td>
       <td class="mono ${gapAmt>=0?'gap-ok':'gap-bad'}">${fmtAmt(gapAmt)}</td>
       <td class="gain clk" style="cursor:pointer" title="点击查看延保视图" onclick="setBiz('yb')">${x.ybGain>0?fmtM(x.ybGain/nM):'—'}</td>
