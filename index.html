@@ -102,8 +102,10 @@ tbody tr:hover{background:#F7FAFD}
   cursor:pointer;color:var(--blue);background:var(--blue-l);border:1px solid #C9DDF2;transition:.15s;vertical-align:middle}
 .drill-btn:hover{background:#D9E9FA}
 .tbl-scroll{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.tbl-scroll thead th{position:sticky;top:0;z-index:2;box-shadow:0 1px 0 var(--line)}   /* 项1：表头固定，不随滑动条滚动 */
 .twrap{position:relative}
 .twrap table th,.twrap table td{white-space:nowrap}   /* 项2：表格字段不换行，超宽靠容器横向滚动 */
+.twrap table td.tl.nm{white-space:normal;word-break:break-all;min-width:110px;vertical-align:top}   /* 项2：网点/名称列过长换行展示 */
 .tbl-flt{width:230px;max-width:100%;border:1px solid var(--line2);border-radius:6px;padding:5px 10px;font-size:12px;margin-bottom:8px;font-family:inherit;color:var(--ink)}
 th{cursor:pointer;user-select:none}
 th.srt-a::after{content:" ▲";font-size:9px;opacity:.8}
@@ -475,12 +477,12 @@ td.drag-hint{background:#E8F0FA}
   <div class="card" style="margin-top:14px">
     <h2>② 业务完成进度 · 任务/回款/完成率/差额/剩余日均</h2>
     <div class="note">口径：任务/回款/完成率 = 区间汇总（Σ区间各月）；任务差额 = 任务额 − 回款额；时间进度率差 = 完成率 − 时间进度；进度差额 = 任务额 × 时间进度 − 回款额；剩余日均需完成 = 任务差额 ÷ 剩余时间天数（本月未完口径）。</div>
-    <div class="twrap"><div style="overflow-x:auto"><table class="mtable" id="bizProgress"></table></div></div>
+    <div class="twrap"><div class="tbl-scroll"><table class="mtable" id="bizProgress"></table></div></div>
   </div>
   <div class="card" style="margin-top:14px">
     <h2>① 月度指标整合走势表 · 完成率 + 过程指标 + 每月结论诊断</h2>
     <div class="note">纵向按月份展开：完成率列为累计口径（N 月完成率 = 1~N 月累计回款 ÷ 累计任务），过程指标为领先指标（领先完成率 1~2 个月传导）。<b>「时间进度」「整体 vs 进度」两列已移除</b>，相关判定并入新增的「每月结论诊断」列（领先/落后幅度 + 主拖累线）。</div>
-    <div class="twrap"><div style="overflow-x:auto"><table class="mtable" id="rpMergedTable"></table></div></div>
+    <div class="twrap"><div class="tbl-scroll"><table class="mtable" id="rpMergedTable"></table></div></div>
   </div>
   <div class="card" style="margin-top:14px">
     <h2>数据缺口标注 · 过程前移的治理目标</h2>
