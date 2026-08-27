@@ -30,9 +30,14 @@ body{background:var(--bg);color:var(--ink);
 
 .bar{background:var(--panel);border:1px solid var(--line);border-radius:10px;
   padding:12px 16px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:18px;align-items:center}
-.fgrp{display:flex;align-items:center;gap:8px}
+.fgrp{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
 .flab{font-size:12px;color:var(--ink2);font-weight:600}
-.seg{display:flex;border:1px solid var(--line2);border-radius:7px;overflow-x:auto;max-width:100%;scrollbar-width:thin}
+.seg{display:flex;flex-wrap:nowrap;border:1px solid var(--line2);border-radius:7px;overflow-x:auto;overflow-y:hidden;
+  max-width:100%;flex:1 1 auto;min-width:0;scrollbar-width:thin}
+.seg::-webkit-scrollbar{height:8px}
+.seg::-webkit-scrollbar-track{background:#F1F4F8;border-radius:4px}
+.seg::-webkit-scrollbar-thumb{background:#C4D0DC;border-radius:4px}
+.seg::-webkit-scrollbar-thumb:hover{background:#A8B8C8}
 .seg button{border:none;background:#fff;padding:6px 14px;font-size:12.5px;cursor:pointer;white-space:nowrap;flex:0 0 auto;
   color:var(--ink2);font-family:inherit;border-right:1px solid var(--line);transition:.15s}
 .seg button:last-child{border-right:none}
@@ -98,6 +103,7 @@ tbody tr:hover{background:#F7FAFD}
 .drill-btn:hover{background:#D9E9FA}
 .tbl-scroll{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:8px}
 .twrap{position:relative}
+.twrap table th,.twrap table td{white-space:nowrap}   /* 项2：表格字段不换行，超宽靠容器横向滚动 */
 .tbl-flt{width:230px;max-width:100%;border:1px solid var(--line2);border-radius:6px;padding:5px 10px;font-size:12px;margin-bottom:8px;font-family:inherit;color:var(--ink)}
 th{cursor:pointer;user-select:none}
 th.srt-a::after{content:" ▲";font-size:9px;opacity:.8}
@@ -465,6 +471,11 @@ td.drag-hint{background:#E8F0FA}
   <div class="card">
     <h2>诊断结论 · 一句话看懂当前状态</h2>
     <div id="rpVerdict"></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h2>② 业务完成进度 · 任务/回款/完成率/差额/剩余日均</h2>
+    <div class="note">口径：任务/回款/完成率 = 区间汇总（Σ区间各月）；任务差额 = 任务额 − 回款额；时间进度率差 = 完成率 − 时间进度；进度差额 = 任务额 × 时间进度 − 回款额；剩余日均需完成 = 任务差额 ÷ 剩余时间天数（本月未完口径）。</div>
+    <div class="twrap"><div style="overflow-x:auto"><table class="mtable" id="bizProgress"></table></div></div>
   </div>
   <div class="card" style="margin-top:14px">
     <h2>① 月度指标整合走势表 · 完成率 + 过程指标 + 每月结论诊断</h2>
@@ -1992,7 +2003,7 @@ function renderRP(){
       ybCj:ybW>0?ybC/ybW:0, ybPrice:ybC>0?ybMall/ybC:0,
       ybZZ:ybTask>0?ybHui/ybTask:0, zzZZ:zzTask0>0?zzHui/zzTask0:0,
       zzPP:zzGong>0?zzHui/zzGong:0, allZZ:allTask>0?allHui/allTask:0,
-      allHui:allHui, allTask:allTask,
+      allHui:allHui, allTask:allTask, ybTask:ybTask, ybHui:ybHui, zzTask:zzTask0, zzHui:zzHui,
       hwCj:hwGong>0?hwOrd/hwGong:0};
   }
   const ma=keys.map(monthAgg).filter(Boolean);
@@ -2053,6 +2064,38 @@ function renderRP(){
   });
   mt+=`</tbody>`;
   document.getElementById("rpMergedTable").innerHTML=mt;
+
+  // ---- 业务完成进度表（② 上方卡片）：延保/增值/整体 × 任务/回款/完成率/差额/剩余日均 ----
+  const sumF=s=>ma.reduce((a,m)=>a+m[s],0);
+  const rowsBiz=[
+    {name:"延保", task:sumF("ybTask"), hui:sumF("ybHui")},
+    {name:"增值", task:sumF("zzTask"), hui:sumF("zzHui")},
+    {name:"整体", task:sumF("allTask"), hui:sumF("allHui")}
+  ];
+  let pdT=0, tdT=0;
+  for(const m of ma){ pdT+=monthValueDays(m.k); tdT+=daysInMonth(m.k); }
+  const remDays=Math.max(0, tdT-pdT);   // 剩余时间天数
+  let bt=`<thead><tr><th class="tl">业务类型</th><th>任务</th><th>回款</th><th>完成率</th><th>任务差额</th><th>时间进度率差(%)</th><th>进度差额</th><th>剩余日均需完成</th></tr></thead><tbody>`;
+  rowsBiz.forEach(b=>{
+    const rate=b.task>0? b.hui/b.task : 0;
+    const taskGap=b.task-b.hui;                        // 任务差额 = 任务 − 回款
+    const rateGap=(rate-rangeTP)*100;                  // 时间进度率差(%) = 完成率 − 时间进度
+    const progGap=b.task*rangeTP-b.hui;                // 进度差额 = 任务×时间进度 − 回款
+    const daily=remDays>0? taskGap/remDays : 0;        // 剩余日均需完成 = 任务差额 ÷ 剩余天数
+    const cls=v=>v>=0?'gap-ok':'gap-bad';
+    bt+=`<tr>
+      <td class="tl nm"><b>${b.name}</b></td>
+      <td class="mono">${fmtM(b.task)}</td>
+      <td class="mono">${fmtM(b.hui)}</td>
+      <td class="mono">${fmtP(rate)}</td>
+      <td class="mono ${cls(taskGap)}">${fmtM(taskGap)}</td>
+      <td class="mono ${cls(rateGap)}">${rateGap>=0?"+":""}${rateGap.toFixed(1)}%</td>
+      <td class="mono ${cls(progGap)}">${fmtM(progGap)}</td>
+      <td class="mono">${remDays>0? fmtM(daily)+" /日" : "—"}</td></tr>`;
+  });
+  bt+=`</tbody>`;
+  const bpEl=document.getElementById("bizProgress");
+  if(bpEl) bpEl.innerHTML=bt;
 }
 function render(){
   RXCTX=[];
@@ -2212,7 +2255,7 @@ document.addEventListener("click",e=>{
 });
 
 // ============ 表格增强：表头排序 / 列拖拽调序 / 名称筛选（项6/7，事件委托，重渲染后持续有效） ============
-const ENH_TABLES=["ybDiag","zzDiag","hwDiag","allSummary","allDiagYB","allDiagZZ","rpMergedTable"];
+const ENH_TABLES=["ybDiag","zzDiag","hwDiag","allSummary","allDiagYB","allDiagZZ","rpMergedTable","bizProgress"];
 const tblSort={};   // {tableId:{col,dir}} 当前排序状态（渲染后重放）
 function enhNum(s){
   const m=String(s).replace(/[^0-9.\-万%]/g,"");
