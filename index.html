@@ -32,8 +32,8 @@ body{background:var(--bg);color:var(--ink);
   padding:12px 16px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:18px;align-items:center}
 .fgrp{display:flex;align-items:center;gap:8px}
 .flab{font-size:12px;color:var(--ink2);font-weight:600}
-.seg{display:flex;border:1px solid var(--line2);border-radius:7px;overflow:hidden}
-.seg button{border:none;background:#fff;padding:6px 14px;font-size:12.5px;cursor:pointer;
+.seg{display:flex;border:1px solid var(--line2);border-radius:7px;overflow-x:auto;max-width:100%;scrollbar-width:thin}
+.seg button{border:none;background:#fff;padding:6px 14px;font-size:12.5px;cursor:pointer;white-space:nowrap;flex:0 0 auto;
   color:var(--ink2);font-family:inherit;border-right:1px solid var(--line);transition:.15s}
 .seg button:last-child{border-right:none}
 .seg button:hover{background:#F0F4F9}
@@ -97,6 +97,12 @@ tbody tr:hover{background:#F7FAFD}
   cursor:pointer;color:var(--blue);background:var(--blue-l);border:1px solid #C9DDF2;transition:.15s;vertical-align:middle}
 .drill-btn:hover{background:#D9E9FA}
 .tbl-scroll{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.twrap{position:relative}
+.tbl-flt{width:230px;max-width:100%;border:1px solid var(--line2);border-radius:6px;padding:5px 10px;font-size:12px;margin-bottom:8px;font-family:inherit;color:var(--ink)}
+th{cursor:pointer;user-select:none}
+th.srt-a::after{content:" ▲";font-size:9px;opacity:.8}
+th.srt-d::after{content:" ▼";font-size:9px;opacity:.8}
+td.drag-hint{background:#E8F0FA}
 
 .rx{font-size:11.5px;color:var(--ink2);line-height:1.5;text-align:left}
 .rx b{color:var(--navy)}
@@ -323,7 +329,7 @@ tbody tr:hover{background:#F7FAFD}
   <div class="card" style="margin-bottom:14px">
     <h2 id="ybH3">归因诊断表 · 按可挽回金额排序</h2>
     <div class="note" id="ybN3">诊断逻辑：分别测算「把某一环节提升到基准水平」能带来的金额增量，增量最大的环节即为该办事处的<b>最大失血点</b>。处方直接指向剧本库 / 认证体系的具体模块。</div>
-    <div class="tbl-scroll"><table id="ybDiag"></table></div>
+    <div class="twrap"><div class="tbl-scroll"><table id="ybDiag"></table></div></div>
     <div class="legend" id="ybLegend">
       <div class="lg"><span class="dot" style="background:#534AB7"></span>成交环节失血 · 工单未转化</div>
       <div class="lg"><span class="dot" style="background:#2E5C8A"></span>客单价失血 · 成交但卖得便宜</div>
@@ -347,7 +353,7 @@ tbody tr:hover{background:#F7FAFD}
     </div>
     <div class="card" style="margin-top:14px;margin-bottom:0">
       <h2>华为延保诊断表 · 按可挽回估算排序</h2>
-      <div class="tbl-scroll"><table id="hwDiag"></table></div>
+      <div class="twrap"><div class="tbl-scroll"><table id="hwDiag"></table></div></div>
     </div>
   </div>
 
@@ -413,7 +419,7 @@ tbody tr:hover{background:#F7FAFD}
   <div class="card" style="margin-top:14px">
     <h2 id="zzH2">增值提升潜力诊断表 · 按单工单产出缺口排序</h2>
     <div class="note" id="zzN3">诊断逻辑：把单工单增值产出拉到基准水平可带来的回款增量 = 提升潜力（按 /月 口径）。完整过程漏斗（开口/报价/成交/客单）待 R1+R2 行为字段采集后接入。</div>
-    <div class="tbl-scroll"><table id="zzDiag"></table></div>
+    <div class="twrap"><div class="tbl-scroll"><table id="zzDiag"></table></div></div>
     <div class="legend" id="zzLegend">
       <div class="lg"><span class="dot" style="background:#0F6E56"></span>单产达标</div>
       <div class="lg"><span class="dot" style="background:#D08A8A"></span>单产未达标</div>
@@ -436,7 +442,7 @@ tbody tr:hover{background:#F7FAFD}
   <div class="card" style="margin-top:14px">
     <h2>延保增值可挽回汇总表</h2>
     <div class="note">点「全部」看各大区，点某个大区看其各办事处（基准取值不变）。点击「延保可挽回/月」跳<b>延保</b>视图、「增值可挽回/月」跳<b>增值</b>视图。合计可挽回 = 延保(含华为) + 增值。</div>
-    <div class="tbl-scroll"><table id="allSummary"></table></div>
+    <div class="twrap"><div class="tbl-scroll"><table id="allSummary"></table></div></div>
   </div>
   <div class="card" style="margin-top:14px">
     <h2 id="allH3">合并诊断表</h2>
@@ -445,8 +451,8 @@ tbody tr:hover{background:#F7FAFD}
       <button data-v="yb" class="on">延保失血</button>
       <button data-v="zz">增值提升</button>
     </div>
-    <div class="tbl-scroll" id="wrapYB"><table id="allDiagYB"></table></div>
-    <div class="tbl-scroll" id="wrapZZ" style="display:none"><table id="allDiagZZ"></table></div>
+    <div class="twrap"><div class="tbl-scroll" id="wrapYB"><table id="allDiagYB"></table></div></div>
+    <div class="twrap"><div class="tbl-scroll" id="wrapZZ" style="display:none"><table id="allDiagZZ"></table></div></div>
     <div class="legend" id="allLegend">
       <div class="lg"><span class="dot" style="background:#A32D2D"></span>延保失血（可挽回）</div>
       <div class="lg"><span class="dot" style="background:#2E5C8A"></span>增值提升（潜力）</div>
@@ -463,7 +469,7 @@ tbody tr:hover{background:#F7FAFD}
   <div class="card" style="margin-top:14px">
     <h2>① 月度指标整合走势表 · 完成率 + 过程指标 + 每月结论诊断</h2>
     <div class="note">纵向按月份展开：完成率列为累计口径（N 月完成率 = 1~N 月累计回款 ÷ 累计任务），过程指标为领先指标（领先完成率 1~2 个月传导）。<b>「时间进度」「整体 vs 进度」两列已移除</b>，相关判定并入新增的「每月结论诊断」列（领先/落后幅度 + 主拖累线）。</div>
-    <div style="overflow-x:auto"><table class="mtable" id="rpMergedTable"></table></div>
+    <div class="twrap"><div style="overflow-x:auto"><table class="mtable" id="rpMergedTable"></table></div></div>
   </div>
   <div class="card" style="margin-top:14px">
     <h2>数据缺口标注 · 过程前移的治理目标</h2>
@@ -788,7 +794,7 @@ function officesOfReg(reg){
     const zz=rawZ.find(z=>z[0]===r[0])||[];
     const hw=rawHw.find(h=>h[0]===r[0])||[];
     return {name:r[0], W:r[3][0], cc:r[3][1], p:r[3][4], amt:r[3][3],
-      ybTask:r[5][3]||0, ybHui:(r[5][3]||0)*(r[5][0]||0),
+      ybTask:r[5][3]||0, ybHui:(r[5][3]||0)*(r[5][0]||0), allTask:r[5][5]||0, allHui:r[5][6]||0,
       zzTask:zz[12]||0, zzHui:zz[2]||0, zzGong:zz[4]||0, ac:zz[5]||0, ad:zz[6]||0, ai:zz[7]||0, gz:zz[10]||0, zb:zz[11]||0,
       hwCj:hw[2]||0, hwGong:hw[4]||0, hwPrice:hw[6]||0};
   });
@@ -798,6 +804,37 @@ function curOfficeReg(){
   if(OFFICE==="all") return REG;
   const r=regOfOffice();
   return (r && r!=="all") ? r : REG;
+}
+// ============ KPI 总览数据源（项1：选办时总览下沉至办事处级，与大区层级指标一致） ============
+function kpiYbRows(){ // rowOf 行集：全国/大区→当前范围；选办(OUTLET=all)→该办办事处级；单网点→该网点
+  if(OUTLET!=="all") return RAW.map(rowOf);
+  if(OFFICE!=="all" && CMP_BASE) return CMP_BASE.RAW.filter(r=>r[0]===OFFICE).map(rowOf);
+  return RAW.map(rowOf).filter(r=>REG==="all"||r.reg===REG);
+}
+function kpiZzRows(){
+  if(OUTLET!=="all") return RAW_Z.map(rowOfZZ);
+  if(OFFICE!=="all" && CMP_BASE) return CMP_BASE.RAW_Z.filter(r=>r[0]===OFFICE).map(rowOfZZ);
+  return RAW_Z.map(rowOfZZ).filter(r=>REG==="all"||r.reg===REG);
+}
+function kpiHwRows(){
+  const mp=S=>S.map(r=>({reg:r[1],cj:r[2],ord:r[3],gong:r[4],hui:r[5],price:r[6],gj:r[7]}));
+  if(OUTLET!=="all") return mp(RAW_HW);
+  if(OFFICE!=="all" && CMP_BASE) return mp(CMP_BASE.RAW_HW.filter(r=>r[0]===OFFICE));
+  return mp(RAW_HW).filter(r=>REG==="all"||r.reg===REG);
+}
+// 上月数据（网点层「上月回款」字段）：最新数据月的前一月，查 OUTLET_ROWS 该网点列值
+function prevMonthKey(){
+  const mk=latestMonthKey();                      // "2026-08"
+  const p=mk.split("-"); const y=+p[0], m=+p[1];
+  const py= m>1? y : y-1, pm= m>1? m-1 : 12;
+  const k=py+"-"+String(pm).padStart(2,"0");
+  return OUTLET_ROWS[k.replace("-","")] ? k : null;
+}
+function prevOutletVal(name, office, col){
+  const pk=prevMonthKey(); if(!pk) return 0;
+  const arr=OUTLET_ROWS[pk.replace("-","")]||[];
+  const r=arr.find(x=>x[4]===office && x[5]===name);
+  return r? (r[col]||0)*10000 : 0;   // 万元×10000 → 元
 }
 
 // 当前实体层级标签：大区 / 办事处 / 网点
@@ -935,26 +972,25 @@ function barChartSVG(title, items, base, fmt, color){
 function renderYB(){
   const all=RAW.map(rowOf);
   const bm=benchmark(allYB());   // 调整3：基准恒取全量办事处，不随大区/网点下钻变化
-  const rows=REG==="all"?all:all.filter(r=>r.reg===REG);
-  const T=rows.reduce((s,r)=>({W:s.W+r.W,c:s.c+r.c,amt:s.amt+r.amt,mallP:s.mallP+r.mallP*r.c}),{W:0,c:0,amt:0,mallP:0});
+  const rows=REG==="all"?all:all.filter(r=>r.reg===REG);   // 当前粒度（诊断表）
+  const kyb=kpiYbRows();                                   // KPI 总览数据源（项1：选办→该办办事处级）
+  const T=kyb.reduce((s,r)=>({W:s.W+r.W,c:s.c+r.c,amt:s.amt+r.amt,mallP:s.mallP+r.mallP*r.c}),{W:0,c:0,amt:0,mallP:0});
   const ybPrice = T.c>0? T.mallP/T.c : 0;
   const diags=rows.map(r=>({r:r,d:diagnose(r,bm)}));
   const totalGain=diags.reduce((s,x)=>s+x.d.total,0);
   const nM=G.nM;
 
-  const hwAllY=RAW_HW.map(r=>({reg:r[1],cj:r[2],gong:r[4],price:r[6]}));   // 当前粒度
-  const hwRowsY=REG==="all"?hwAllY:hwAllY.filter(r=>r.reg===REG);
+  const hwRowsY=kpiHwRows();   // KPI 数据源
   const hwGongY=hwRowsY.reduce((s,r)=>s+r.gong,0);
   const hwCjY=hwGongY>0? hwRowsY.reduce((s,r)=>s+r.cj*r.gong,0)/hwGongY : 0;
   // 华为延保可挽回（与全部看板同构算法）：使「延保看板 延保可挽回 + 华为可挽回」=「全部看板 延保可挽回(含华为)」
   const hwBm=baseOf(allHW().map(a=>({val:a.cj,w:a.gong,reg:a.reg})));   // 调整3：华为基准恒取全量
   const hwGainYB=hwRowsY.reduce((s,r)=>s+Math.max(0,hwBm-r.cj)*r.gong*r.price,0);
-  // 按所选大区聚合的完成率（加权：回款/任务），确保 KPI 随大区联动
-  const ybTaskReg=rows.reduce((s,r)=>s+r.ybTask,0);
-  const ybHuiReg=rows.reduce((s,r)=>s+r.meta[0]*r.ybTask,0);
+  // 按所选范围聚合的完成率（加权：回款/任务），确保 KPI 随范围联动
+  const ybTaskReg=kyb.reduce((s,r)=>s+r.ybTask,0);
+  const ybHuiReg=kyb.reduce((s,r)=>s+r.meta[0]*r.ybTask,0);
   const ybZZreg=ybTaskReg>0?ybHuiReg/ybTaskReg:0;
-  const zzAllY=RAW_Z.map(rowOfZZ);
-  const zzRowsY=REG==="all"?zzAllY:zzAllY.filter(r=>r.reg===REG);
+  const zzRowsY=kpiZzRows();
   const zzTaskY=zzRowsY.reduce((s,r)=>s+((r.task||0)),0);
   const zzWanY=zzTaskY>0? zzRowsY.reduce((s,r)=>s+r.hui,0)/zzTaskY : 0;
   let kp=[
@@ -969,7 +1005,7 @@ function renderYB(){
     ["时间进度",fmtP(curProgress()),progHint(),0],
     ["完成率 vs 时间进度",gapTxt(ybZZreg,curProgress()),"延保完成率 vs 进度",1,1]
   ];
-  if(OFFICE!=="all") kp=kp.filter(x=>!x[4]);   // Phase 1：网点层无任务额 → 隐藏完成率卡片
+  if(OUTLET!=="all") kp=kp.filter(x=>!x[4]);   // 仅单网点无任务额 → 隐藏完成率卡片（选办时该办有任务额，保留）
   document.getElementById("kpis").innerHTML=kp.map(k=>
     `<div class="kpi${k[3]?" hl":""}"><div class="k">${k[0]}</div>
      <div class="v mono">${k[1]}</div><div class="d">${k[2]}</div></div>`).join("");
@@ -1045,13 +1081,16 @@ function renderYB(){
       return {name:rg,reg:rg,pilot:rs.some(r=>r.pilot),W:W,cc:cc,p:pp,amt:amt,zz:[zz,0,0],ybzz:ybzz,ybTask:ybTask,gain:gain,key:dn.key};
     });
   } else {
-    diagRows=rows.map(r=>({name:r.name,reg:r.reg,pilot:r.pilot,W:r.W,cc:r.cc,p:r.p,amt:r.amt,zz:r.zz,ybzz:r.meta[0],ybTask:r.ybTask,gain:diagnose(r,bm).total,key:diagnose(r,bm).key}));
+    diagRows=rows.map(r=>({name:r.name,reg:r.reg,pilot:r.pilot,W:r.W,c:r.c,cc:r.cc,p:r.p,amt:r.amt,zz:r.zz,ybzz:r.meta[0],ybTask:r.ybTask,
+      prevAmt:(OFFICE!=="all")?(prevOutletVal(r.name,OFFICE,22)+prevOutletVal(r.name,OFFICE,23)):0,   // 上月延保回款（商城+华为）
+      gain:diagnose(r,bm).total,key:diagnose(r,bm).key}));
   }
   diagRows.sort((x,y)=>y.gain-x.gain);
   const nD=diagRows.length, hiD=Math.floor(nD*0.3), loD=nD-Math.floor(nD*0.3);
   let th=`<thead><tr><th class="tl">${diagEntLabel()}</th><th>大区</th><th>试点</th><th>工单量</th>
     <th>日均工单量</th><th>成交率</th><th>客单价</th><th>${OFFICE!=="all"?"延保回款":"延保完成率"}</th>
-    <th>时间进度</th><th>进度差额(金额)</th><th>诊断结论</th><th>可挽回/月</th><th class="tl">处方（指向具体工具）</th></tr></thead><tbody>`;
+    ${OFFICE!=="all" ? `<th>商城延保订单</th><th>单工单延保产出</th><th>上月延保回款</th>` : `<th>时间进度</th><th>进度差额(金额)</th>`}
+    <th>诊断结论</th><th>可挽回/月</th><th class="tl">处方（指向具体工具）</th></tr></thead><tbody>`;
   const keys=curMonthKeys(), tdays=valueDays(keys), tp=timeProgress();
   th+=diagRows.map((x,i)=>{
     const R=RX[x.key];
@@ -1066,8 +1105,9 @@ function renderYB(){
       <td class="mono">${avgDaily.toFixed(1)}</td>
       ${cell(x.cc,bm.c,fmtP)}${cell(x.p,bm.p,v=>"¥"+Math.round(v))}
       <td class="mono">${OFFICE!=="all"?"¥"+Math.round(x.amt).toLocaleString():(x.ybTask>0?fmtP(x.ybzz):"—")}</td>
-      <td class="mono">${fmtP(tp)}</td>
-      <td class="mono ${gapAmt>=0?'gap-ok':'gap-bad'}">${fmtAmt(gapAmt)}</td>
+      ${OFFICE!=="all"
+        ? `<td class="mono">${fmtN(x.c)}</td><td class="mono">¥${(x.amt/Math.max(1,x.W)).toFixed(1)}</td><td class="mono">¥${Math.round(x.prevAmt).toLocaleString()}</td>`
+        : `<td class="mono">${fmtP(tp)}</td><td class="mono ${gapAmt>=0?'gap-ok':'gap-bad'}">${fmtAmt(gapAmt)}</td>`}
       <td><span class="tag ${R.cls}">${R.tag}</span></td>
       <td class="gain ${i<hiD?"rg-bad":(i>=loD?"rg-ok":"")}">${x.gain>0?fmtM(x.gain/nM):"—"}</td>
       ${rxCell(R.rx, x.key==="close"?"CLOSE":x.key==="price"?"PRICE":"YBOK",
@@ -1198,25 +1238,27 @@ function renderZZ(){
   const basePP=baseOf(allZZ().map(r=>({val:r.pp,w:r.gong,reg:r.reg})));   // 调整3：增值基准恒取全量
 
   const T=rows.reduce((s,r)=>({H:s.H+r.hui,G:s.G+r.gong,AC:s.AC+r.ac,AD:s.AD+r.ad,AI:s.AI+r.ai,AL:s.AL+r.al}),{H:0,G:0,AC:0,AD:0,AI:0,AL:0});
-  const taskSum=rows.reduce((s,r)=>s+((r.task||0)),0);
-  const zzWan=taskSum>0? T.H/taskSum:0;
-  const ppAll=T.G>0? T.H/T.G:0;
-  const totalPieces=T.AC+T.AD+T.AI+T.AL;
-  const rackRatio=totalPieces>0?(T.AC+T.AD)/totalPieces:0;
+  const kzz=kpiZzRows();   // KPI 总览数据源（项1：选办→该办办事处级）
+  const Tk=kzz.reduce((s,r)=>({H:s.H+r.hui,G:s.G+r.gong,AC:s.AC+r.ac,AD:s.AD+r.ad,AI:s.AI+r.ai,AL:s.AL+r.al}),{H:0,G:0,AC:0,AD:0,AI:0,AL:0});
+  const taskSum=kzz.reduce((s,r)=>s+((r.task||0)),0);
+  const zzWan=taskSum>0? Tk.H/taskSum:0;
+  const ppAll=Tk.G>0? Tk.H/Tk.G:0;
+  const totalPieces=Tk.AC+Tk.AD+Tk.AI+Tk.AL;
+  const rackRatio=totalPieces>0?(Tk.AC+Tk.AD)/totalPieces:0;
   const zzDiags=rows.map(r=>{const gap=Math.max(0,basePP-r.pp);return {r:r,pot:r.gong*gap};});
   const zzPot=zzDiags.reduce((s,x)=>s+x.pot,0);
   const nM=G.nM;
 
-  const gzSum=rows.reduce((s,r)=>s+r.gz,0);
-  const zbSum=rows.reduce((s,r)=>s+r.zb,0);
-  const r05v=(zbSum+0.5+gzSum)>0? T.AD/(zbSum+0.5+gzSum):0;
-  const r1v=(zbSum+gzSum)>0? (T.AC+T.AD)/(zbSum+gzSum):0;
-  const rHDMIv=T.G>0? T.AI/T.G:0;
+  const gzSum=kzz.reduce((s,r)=>s+r.gz,0);
+  const zbSum=kzz.reduce((s,r)=>s+r.zb,0);
+  const r05v=(zbSum+0.5+gzSum)>0? Tk.AD/(zbSum+0.5+gzSum):0;
+  const r1v=(zbSum+gzSum)>0? (Tk.AC+Tk.AD)/(zbSum+gzSum):0;
+  const rHDMIv=Tk.G>0? Tk.AI/Tk.G:0;
 
   let kp=[
     ["增值完成率(加权)",(zzWan*100).toFixed(1)+"%","回款/任务",0,1],
     ["单工单增值产出","¥"+ppAll.toFixed(1),"基准 ¥"+basePP.toFixed(1),0],
-    ["上门可售工单",fmtN(T.G),"增值工单池",0],
+    ["上门可售工单",fmtN(Tk.G),"增值工单池",0],
     ["多功能挂架出库占比0.5",(r05v*100).toFixed(1)+"%","结构渗透",0],
     ["挂架出库占比1",(r1v*100).toFixed(1)+"%","结构渗透",0],
     ["保护器+8KHDMI占比",(rHDMIv*100).toFixed(1)+"%","结构渗透",0],
@@ -1224,7 +1266,7 @@ function renderZZ(){
     ["时间进度",fmtP(curProgress()),progHint(),0],
     ["完成率 vs 时间进度",gapTxt(zzWan,curProgress()),"增值完成率 vs 进度",1,1]
   ];
-  if(OFFICE!=="all") kp=kp.filter(x=>!x[4]);   // Phase 1：网点层无任务额 → 隐藏完成率卡片
+  if(OUTLET!=="all") kp=kp.filter(x=>!x[4]);   // 仅单网点无任务额 → 隐藏完成率卡片（选办时该办有任务额，保留）
   document.getElementById("kpis").innerHTML=kp.map(k=>
     `<div class="kpi${k[3]?" hl":""}"><div class="k">${k[0]}</div>
      <div class="v mono">${k[1]}</div><div class="d">${k[2]}</div></div>`).join("");
@@ -1273,7 +1315,10 @@ function renderZZ(){
       return {name:rg,reg:rg,gong:gong,zz:zz,pp:pp,hui:hui,zzTask:zzTask,pot:pot};
     });
   } else {
-    zzRowsDiag=rows.map(r=>({name:r.name,reg:r.reg,gong:r.gong,zz:r.zz,pp:r.pp,hui:r.hui,zzTask:(r.task||0),pot:r.gong*Math.max(0,basePP-r.pp)}));
+    zzRowsDiag=rows.map(r=>({name:r.name,reg:r.reg,gong:r.gong,zz:r.zz,pp:r.pp,hui:r.hui,zzTask:(r.task||0),
+      ac:r.ac,ad:r.ad,ai:r.ai,
+      prevZz:(OFFICE!=="all")?prevOutletVal(r.name,OFFICE,24):0,   // 上月增值回款
+      pot:r.gong*Math.max(0,basePP-r.pp)}));
   }
   zzRowsDiag.sort((a,b)=>b.pot-a.pot);
   const nD=zzRowsDiag.length, hiD=Math.floor(nD*0.3), loD=nD-Math.floor(nD*0.3);
@@ -1289,13 +1334,18 @@ function renderZZ(){
                 : (r.zz>=basePP && r.pp<basePP)?"mid"
                 : "dlow";
   const keys=curMonthKeys(), tdays=valueDays(keys), tp=timeProgress();
-  let th=`<thead><tr><th class="tl">${diagEntLabel()}</th><th>大区</th><th>工单量</th><th>日均工单量</th><th>${OFFICE!=="all"?"增值回款":"增值完成率"}</th><th>时间进度</th><th>进度差额(金额)</th>
+  let th=`<thead><tr><th class="tl">${diagEntLabel()}</th><th>大区</th><th>工单量</th><th>日均工单量</th><th>${OFFICE!=="all"?"增值回款":"增值完成率"}</th>
+    ${OFFICE!=="all"
+      ? `<th>上月增值回款</th><th>多功能挂架数量</th><th>普通+简易挂架数量</th><th>保护器+8KHDMI下单数量</th>`
+      : `<th>时间进度</th><th>进度差额(金额)</th>`}
     <th>单工单产出</th><th>多功能挂架占比0.5</th><th>挂架占比1</th><th>保护器+8KHDMI占比</th><th>提升潜力/月</th><th class="tl">处方</th></tr></thead><tbody>`;
   th+=zzRowsDiag.map((x,i)=>{
     const R=RXZ[tagOf(x)];
     const tg=tagOf(x);
     const rs=REG==="all"?all.filter(r=>r.reg===x.name):all.filter(r=>r.name===x.name);
-    const ac=rs.reduce((s,r)=>s+r.ac,0), ad=rs.reduce((s,r)=>s+r.ad,0), ai=rs.reduce((s,r)=>s+r.ai,0),
+    const ac=OFFICE!=="all"? (x.ac||0) : rs.reduce((s,r)=>s+r.ac,0);
+    const ad=OFFICE!=="all"? (x.ad||0) : rs.reduce((s,r)=>s+r.ad,0);
+    const ai=OFFICE!=="all"? (x.ai||0) : rs.reduce((s,r)=>s+r.ai,0),
           gz=rs.reduce((s,r)=>s+r.gz,0), zb=rs.reduce((s,r)=>s+r.zb,0), gong=rs.reduce((s,r)=>s+r.gong,0);
     const r05=(zb+0.5+gz)>0? ad/(zb+0.5+gz):0;
     const r1 =(zb+gz)>0? (ac+ad)/(zb+gz):0;
@@ -1307,8 +1357,9 @@ function renderZZ(){
       <td class="mono">${fmtN(x.gong)}</td>
       <td class="mono">${avgDaily.toFixed(1)}</td>
       <td class="mono">${OFFICE!=="all"?"¥"+Math.round(x.hui).toLocaleString():(x.zzTask>0?(x.zz*100).toFixed(1)+"%":"—")}</td>
-      <td class="mono">${fmtP(tp)}</td>
-      <td class="mono ${gapAmt>=0?'gap-ok':'gap-bad'}">${fmtAmt(gapAmt)}</td>
+      ${OFFICE!=="all"
+        ? `<td class="mono">¥${Math.round(x.prevZz).toLocaleString()}</td><td class="mono">${fmtN(x.ad)}</td><td class="mono">${fmtN(x.ac)}</td><td class="mono">${fmtN(x.ai)}</td>`
+        : `<td class="mono">${fmtP(tp)}</td><td class="mono ${gapAmt>=0?'gap-ok':'gap-bad'}">${fmtAmt(gapAmt)}</td>`}
       <td class="mono ${x.pp<basePP?"gap-bad":"gap-ok"}">¥${x.pp.toFixed(1)}</td>
       <td class="mono">${(r05*100).toFixed(1)}%</td>
       <td class="mono">${(r1*100).toFixed(1)}%</td>
@@ -1348,7 +1399,7 @@ function renderSummary(){
     const zzRs=isReg?zzAll.filter(r=>r.reg===name):zzAll.filter(r=>r.name===name);
     const hwRs=isReg?hwAll.filter(r=>r.reg===name):hwAll.filter(r=>r.name===name);
     const ybTask=ybRs.reduce((s,r)=>s+r.ybTask,0);
-    const ybHui=ybRs.reduce((s,r)=>s+r.meta[0]*r.ybTask,0);
+    const ybHui=ybRs.reduce((s,r)=>s+r.amt,0);   // 修正：网点粒度 meta[0]*ybTask 恒0 → 改用 amt（各粒度一致）
     const ybZZ=ybTask>0?ybHui/ybTask:0;
     const zzTask=zzRs.reduce((s,r)=>s+((r.task||0)),0);
     const zzHui=zzRs.reduce((s,r)=>s+r.hui,0);
@@ -1359,21 +1410,27 @@ function renderSummary(){
     const ybGain=ybRs.reduce((s,r)=>s+diagnose(r,ybBm).total,0);   // 纯延保可挽回（不含华为）
     const hwGain=hwRs.reduce((s,r)=>s+Math.max(0,hwBm-r.cj)*r.gong*r.price,0);   // 华为可挽回（单独列）
     const zzPot=zzRs.reduce((s,r)=>s+r.gong*Math.max(0,basePP-r.pp),0);   // 增值可挽回
-    return {name,reg:isReg?name:(zzRs[0]?zzRs[0].reg:""),ybZZ,zzZZ,allZZ,ybTask,zzTask,allTask,ybHui,zzHui,allHui,ybGain,hwGain,zzPot,tot:ybGain+hwGain+zzPot};
+    const ybW=ybRs.reduce((s,r)=>s+r.W,0);
+    const zzGong=zzRs.reduce((s,r)=>s+r.gong,0);
+    return {name,reg:isReg?name:(zzRs[0]?zzRs[0].reg:""),ybZZ,zzZZ,allZZ,ybTask,zzTask,allTask,ybHui,zzHui,allHui,W:ybW,zzGong,ybGain,hwGain,zzPot,tot:ybGain+hwGain+zzPot};
   }
   const rows=ents.map(entMetrics);
   rows.sort((a,b)=>b.tot-a.tot);
   let th=`<thead><tr><th class="tl">${REG==="all"?"大区":(OFFICE!=="all"?"网点":"办事处")}</th><th>${OFFICE!=="all"?"延保回款":"延保完成率"}</th><th>${OFFICE!=="all"?"增值回款":"增值完成率"}</th><th>${OFFICE!=="all"?"整体回款":"整体完成率"}</th>`
-    +`<th>时间进度</th><th>进度差额(金额)</th><th class="clk">延保可挽回/月 ⇄延保</th><th class="clk">华为可挽回/月</th><th class="clk">增值可挽回/月 ⇄增值</th><th>合计可挽回</th></tr></thead><tbody>`;
+    +(OFFICE!=="all"
+      ? `<th>按单工单延保产出</th><th>按单工单增值产出</th>`
+      : `<th>时间进度</th><th>进度差额(金额)</th>`)
+    +`<th class="clk">延保可挽回/月 ⇄延保</th><th class="clk">华为可挽回/月</th><th class="clk">增值可挽回/月 ⇄增值</th><th>合计可挽回</th></tr></thead><tbody>`;
   th+=rows.map(x=>{
     const gapAmt=(x.allZZ-tp)*x.allTask;
     return `<tr>
       <td class="tl nm">${x.name}</td>
-      <td class="mono ${x.ybZZ<tp?'gap-bad':'gap-ok'}">${OFFICE!=="all"?"¥"+fmtM(x.ybHui):(x.ybTask>0?fmtP(x.ybZZ):"—")}</td>
-      <td class="mono ${x.zzZZ<tp?'gap-bad':'gap-ok'}">${OFFICE!=="all"?"¥"+fmtM(x.zzHui):(x.zzTask>0?fmtP(x.zzZZ):"—")}</td>
-      <td class="mono ${x.allZZ<tp?'gap-bad':'gap-ok'}">${OFFICE!=="all"?"¥"+fmtM(x.allHui):(x.allTask>0?fmtP(x.allZZ):"—")}</td>
-      <td class="mono">${fmtP(tp)}</td>
-      <td class="mono ${gapAmt>=0?'gap-ok':'gap-bad'}">${fmtAmt(gapAmt)}</td>
+      <td class="mono ${x.ybZZ<tp?'gap-bad':'gap-ok'}">${OFFICE!=="all"?fmtM(x.ybHui):(x.ybTask>0?fmtP(x.ybZZ):"—")}</td>
+      <td class="mono ${x.zzZZ<tp?'gap-bad':'gap-ok'}">${OFFICE!=="all"?fmtM(x.zzHui):(x.zzTask>0?fmtP(x.zzZZ):"—")}</td>
+      <td class="mono ${x.allZZ<tp?'gap-bad':'gap-ok'}">${OFFICE!=="all"?fmtM(x.allHui):(x.allTask>0?fmtP(x.allZZ):"—")}</td>
+      ${OFFICE!=="all"
+        ? `<td class="mono">¥${(x.ybHui/Math.max(1,x.W)).toFixed(1)}</td><td class="mono">¥${(x.zzHui/Math.max(1,x.zzGong)).toFixed(1)}</td>`
+        : `<td class="mono">${fmtP(tp)}</td><td class="mono ${gapAmt>=0?'gap-ok':'gap-bad'}">${fmtAmt(gapAmt)}</td>`}
       <td class="gain clk" style="cursor:pointer" title="点击查看延保视图" onclick="setBiz('yb')">${x.ybGain>0?fmtM(x.ybGain/nM):'—'}</td>
       <td class="gain">${x.hwGain>0?fmtM(x.hwGain/nM):'—'}</td>
       <td class="gain clk" style="cursor:pointer" title="点击查看增值视图" onclick="setBiz('zz')">${x.zzPot>0?fmtM(x.zzPot/nM):'—'}</td>
@@ -1395,14 +1452,16 @@ function renderAll(){
   const hwRows=REG==="all"?hwAll:hwAll.filter(r=>r.reg===REG);
   const hwGain=hwRows.reduce((s,r)=>s+Math.max(0,hwBm-r.cj)*r.gong*r.price,0);
   const ybGainTotal=ybGain+hwGain;   // 延保可挽回 = 延保 + 华为
-  const ybT=ybRows.reduce((s,r)=>({W:s.W+r.W,c:s.c+r.c,amt:s.amt+r.amt,mallP:s.mallP+r.p*r.c}),{W:0,c:0,amt:0,mallP:0});
+  const kybA=kpiYbRows();   // KPI 总览数据源（项1：选办→该办办事处级）
+  const ybT=kybA.reduce((s,r)=>({W:s.W+r.W,c:s.c+r.c,amt:s.amt+r.amt,mallP:s.mallP+r.p*r.c}),{W:0,c:0,amt:0,mallP:0});
 
   const zzAll=RAW_Z.map(rowOfZZ);
   const zzRows=REG==="all"?zzAll:zzAll.filter(r=>r.reg===REG);
   const basePP=baseOf(allZZ().map(r=>({val:r.pp,w:r.gong,reg:r.reg})));   // 调整3：增值基准恒取全量
   const zzDiags=zzRows.map(r=>{const gap=Math.max(0,basePP-r.pp);return {r:r,pot:r.gong*gap};});
-  const zzT=zzRows.reduce((s,r)=>({H:s.H+r.hui,G:s.G+r.gong}),{H:0,G:0});
-  const zzTask=zzRows.reduce((s,r)=>s+((r.task||0)),0);
+  const kzzA=kpiZzRows();
+  const zzT=kzzA.reduce((s,r)=>({H:s.H+r.hui,G:s.G+r.gong}),{H:0,G:0});
+  const zzTask=kzzA.reduce((s,r)=>s+((r.task||0)),0);
   const zzWan=zzTask>0?zzT.H/zzTask:0;
   const zzPP=zzT.G>0?zzT.H/zzT.G:0;
   const zzPot=zzDiags.reduce((s,x)=>s+x.pot,0);
@@ -1410,12 +1469,12 @@ function renderAll(){
 
   const ybCj = ybT.W>0? ybT.c/ybT.W : 0;
   const ybPrice = ybT.c>0? ybT.mallP/ybT.c : 0;
-  // 按所选大区聚合的完成率（加权：回款/任务），确保 KPI 随大区联动
-  const ybTaskReg=ybRows.reduce((s,r)=>s+r.ybTask,0);
-  const ybHuiReg=ybRows.reduce((s,r)=>s+r.meta[0]*r.ybTask,0);
+  // 按所选范围聚合的完成率（加权：回款/任务），确保 KPI 随范围联动
+  const ybTaskReg=kybA.reduce((s,r)=>s+r.ybTask,0);
+  const ybHuiReg=kybA.reduce((s,r)=>s+r.meta[0]*r.ybTask,0);
   const ybZZreg=ybTaskReg>0?ybHuiReg/ybTaskReg:0;
-  const allTaskReg=ybRows.reduce((s,r)=>s+r.meta[5],0);
-  const allHuiReg=ybRows.reduce((s,r)=>s+r.meta[6],0);
+  const allTaskReg=kybA.reduce((s,r)=>s+r.meta[5],0);
+  const allHuiReg=kybA.reduce((s,r)=>s+r.meta[6],0);
   const allZZreg=allTaskReg>0?allHuiReg/allTaskReg:0;
   let kp=[
     ["延保完成率",fmtP(ybZZreg),"加权回款/任务",0,1],
@@ -1428,26 +1487,23 @@ function renderAll(){
     ["时间进度",fmtP(curProgress()),progHint(),0],
     ["完成率 vs 时间进度",gapTxt(allZZreg,curProgress()),"整体完成率 vs 进度",1,1]
   ];
-  if(OFFICE!=="all") kp=kp.filter(x=>!x[4]);   // Phase 1：网点层无任务额 → 隐藏完成率卡片
+  if(OUTLET!=="all") kp=kp.filter(x=>!x[4]);   // 仅单网点无任务额 → 隐藏完成率卡片（选办时该办有任务额，保留）
   document.getElementById("kpis").innerHTML=kp.map(k=>
     `<div class="kpi${k[3]?" hl":""}"><div class="k">${k[0]}</div>
      <div class="v mono">${k[1]}</div><div class="d">${k[2]}</div></div>`).join("");
 
   // 双线业务概览：华为延保成交率 / 多功能挂架出库占比0.5 / 挂架出库占比1 / 保护器+8KHDMI结构占比
-  const hwAllR=RAW_HW.map(r=>({reg:r[1],cj:r[2],gong:r[4]}));
-  const hwRowsR=REG==="all"?hwAllR:hwAllR.filter(r=>r.reg===REG);
+  const hwRowsR=kpiHwRows();
   const hwGongTot=hwRowsR.reduce((s,r)=>s+r.gong,0);
   const hwCj=hwGongTot>0? hwRowsR.reduce((s,r)=>s+r.cj*r.gong,0)/hwGongTot : 0;
-  const hwAllR2=RAW_HW.map(r=>({reg:r[1],gong:r[4],gj:r[7],hui:r[5],ord:r[3]}));
-  const hwRowsR2=REG==="all"?hwAllR2:hwAllR2.filter(r=>r.reg===REG);
+  const hwRowsR2=kpiHwRows();
   const hwGjTot=hwRowsR2.reduce((s,r)=>s+r.gj,0);
   const hwGong2=hwRowsR2.reduce((s,r)=>s+r.gong,0);
   const hwGjRatio=hwGong2>0?hwGjTot/hwGong2:0;
   const hwHuiTot=hwRowsR2.reduce((s,r)=>s+r.hui,0);   // 华为延保回款(col26)
   const hwOrdTot=hwRowsR2.reduce((s,r)=>s+r.ord,0);    // 华为全质保延保订单(col16)
   const hwPrice=hwOrdTot>0?hwHuiTot/hwOrdTot:0;        // 华为延保均价=回款/订单
-  const zzAllR2=RAW_Z.map(rowOfZZ);
-  const zzRowsR2=(REG==="all"?zzAllR2:zzAllR2.filter(r=>r.reg===REG));
+  const zzRowsR2=kpiZzRows();
   const FA=zzRowsR2.reduce((a,r)=>({ac:a.ac+r.ac,ad:a.ad+r.ad,ai:a.ai+r.ai,gz:a.gz+r.gz,zb:a.zb+r.zb,gong:a.gong+r.gong}),{ac:0,ad:0,ai:0,gz:0,zb:0,gong:0});
   const v05=(FA.zb+0.5+FA.gz)>0? FA.ad/(FA.zb+0.5+FA.gz):0;
   const v1=(FA.zb+FA.gz)>0? (FA.ac+FA.ad)/(FA.zb+FA.gz):0;
@@ -1471,7 +1527,7 @@ function renderAll(){
     `<div style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:10px">双线业务概览 · 关键结构指标（${OFFICE!=="all"?("所选办事处："+OFFICE):(REG==="all"?"全国":REG)}）</div>
      <div style="display:flex;flex-wrap:wrap;gap:12px">${ovHTML}</div>`;
 
-  // 双线达成对比：延保完成率（加权）+ 增值完成率（调整4：全部/大区层=13大区；办事处/网点层=大区内各办事处）
+  // 双线达成对比：延保完成率（加权）+ 增值完成率 + 整体完成率（调整2：加整体；调整4：层级联动）
   function dualEnts(){
     if(OFFICE==="all"){
       const regs=[...new Set(ybAll.map(r=>r.reg))];
@@ -1479,30 +1535,35 @@ function renderAll(){
         const hui=rs.reduce((s,r)=>s+r.meta[0]*r.ybTask,0), task=rs.reduce((s,r)=>s+r.ybTask,0);
         const zrs=zzAll.filter(r=>r.reg===rg);
         const H=sum(zrs,"hui"), t=zrs.reduce((s,r)=>s+((r.task||0)),0);
-        return {label:rg, ybZZ:task>0?hui/task:0, zzZZ:t>0?H/t:0};});
+        const aH=rs.reduce((s,r)=>s+r.meta[6],0), aT=rs.reduce((s,r)=>s+r.meta[5],0);
+        return {label:rg, ybZZ:task>0?hui/task:0, zzZZ:t>0?H/t:0, allZZ:aT>0?aH/aT:0};});
     }
-    return officesOfReg(curOfficeReg()).map(o=>({label:o.name, ybZZ:o.ybTask>0?o.ybHui/o.ybTask:0, zzZZ:o.zzTask>0?o.zzHui/o.zzTask:0}));
+    return officesOfReg(curOfficeReg()).map(o=>({label:o.name, ybZZ:o.ybTask>0?o.ybHui/o.ybTask:0, zzZZ:o.zzTask>0?o.zzHui/o.zzTask:0, allZZ:o.allTask>0?o.allHui/o.allTask:0}));
   }
   const ents2=dualEnts();
   const baseZZ=quantile(allZZ().map(r=>r.zz),.75);
   const baseYbZZ=quantile(allYB().map(r=>r.meta[0]),.75);
-  const blockTop=18,rowH=14,blockH=blockTop+ents2.length*rowH+6;
-  const dualTitle = OFFICE!=="all" ? "大区内各办事处 双线达成" : "各大区 双线达成";
-  let cs=`<svg width="100%" viewBox="0 0 700 ${blockH+10}" role="img"><title>双线达成</title>`;
-  cs+=`<text x="10" y="12" fill="#1F3A5F" font-size="12" font-weight="600">${dualTitle}（上：延保完成率 / 下：增值完成率）</text>`;
-  const y0=blockTop+6, CX0=84, CXW=560;
-  const ybV=ents2.map(e=>e.ybZZ), zzV=ents2.map(e=>e.zzZZ);
-  const sc1=Math.max(...ybV,baseYbZZ)*1.15, sc2=Math.max(...zzV,baseZZ)*1.15;
+  const baseAllZZ=quantile(allYB().map(r=>r.meta[5]>0?r.meta[6]/r.meta[5]:0),.75);
+  const blockTop=18,rowH=18,blockH=blockTop+ents2.length*rowH+6;
+  const dualTitle = OFFICE!=="all" ? "大区内各办事处 三线达成" : "各大区 三线达成";
+  let cs=`<svg width="100%" viewBox="0 0 700 ${blockH+10}" role="img"><title>三线达成</title>`;
+  cs+=`<text x="10" y="12" fill="#1F3A5F" font-size="12" font-weight="600">${dualTitle}（延保完成率 / 增值完成率 / 整体完成率）</text>`;
+  const y0=blockTop+8, CX0=84, CXW=560;
+  const ybV=ents2.map(e=>e.ybZZ), zzV=ents2.map(e=>e.zzZZ), alV=ents2.map(e=>e.allZZ);
+  const sc1=Math.max(...ybV,baseYbZZ)*1.15, sc2=Math.max(...zzV,baseZZ)*1.15, sc3=Math.max(...alV,baseAllZZ)*1.15;
   cs+=`<line x1="${CX0+CXW*baseYbZZ/sc1}" y1="${y0}" x2="${CX0+CXW*baseYbZZ/sc1}" y2="${y0+ents2.length*rowH}" stroke="#A32D2D" stroke-width="1" stroke-dasharray="3 3"/>`;
   cs+=`<line x1="${CX0+CXW*baseZZ/sc2}" y1="${y0}" x2="${CX0+CXW*baseZZ/sc2}" y2="${y0+ents2.length*rowH}" stroke="#A32D2D" stroke-width="1" stroke-dasharray="3 3" opacity="0.45"/>`;
+  cs+=`<line x1="${CX0+CXW*baseAllZZ/sc3}" y1="${y0}" x2="${CX0+CXW*baseAllZZ/sc3}" y2="${y0+ents2.length*rowH}" stroke="#C2410C" stroke-width="1" stroke-dasharray="3 3" opacity="0.6"/>`;
   ents2.forEach((e,ri)=>{const yy=y0+ri*rowH;
-    const w1=CXW*e.ybZZ/sc1, w2=CXW*e.zzZZ/sc2;
-    cs+=`<text x="${CX0-6}" y="${yy+5}" text-anchor="end" fill="#5A6774" font-size="10">${e.label.replace("大区","")}</text>
-      <rect x="${CX0}" y="${yy}" width="${w1}" height="5" rx="2" fill="#1F3A5F"/>
-      <rect x="${CX0}" y="${yy+6}" width="${w2}" height="5" rx="2" fill="#0F6E56"/>
-      <text x="${CX0+w1+4}" y="${yy+4}" fill="#1F3A5F" font-size="9.5">${fmtP(e.ybZZ)}</text>
-      <text x="${CX0+w2+4}" y="${yy+11}" fill="#0F6E56" font-size="9.5">${fmtP(e.zzZZ)}</text>`;});
-  cs+=`<text x="10" y="${blockH+4}" fill="#8A96A3" font-size="10">深线=延保完成率(基准红)　绿线=增值完成率(基准浅红)　数值：上延保/下增值</text></svg>`;
+    const w1=CXW*e.ybZZ/sc1, w2=CXW*e.zzZZ/sc2, w3=CXW*e.allZZ/sc3;
+    cs+=`<text x="${CX0-6}" y="${yy+9}" text-anchor="end" fill="#5A6774" font-size="10">${e.label.replace("大区","")}</text>
+      <rect x="${CX0}" y="${yy}" width="${w1}" height="4" rx="2" fill="#1F3A5F"/>
+      <rect x="${CX0}" y="${yy+5}" width="${w2}" height="4" rx="2" fill="#0F6E56"/>
+      <rect x="${CX0}" y="${yy+10}" width="${w3}" height="4" rx="2" fill="#C2410C"/>
+      <text x="${CX0+w1+4}" y="${yy+4}" fill="#1F3A5F" font-size="9">${fmtP(e.ybZZ)}</text>
+      <text x="${CX0+w2+4}" y="${yy+9}" fill="#0F6E56" font-size="9">${fmtP(e.zzZZ)}</text>
+      <text x="${CX0+w3+4}" y="${yy+14}" fill="#C2410C" font-size="9">${fmtP(e.allZZ)}</text>`;});
+  cs+=`<text x="10" y="${blockH+4}" fill="#8A96A3" font-size="10">深线=延保完成率(基准红)　绿线=增值完成率(基准浅红)　橙线=整体完成率(基准橙)　数值：上延保/中增值/下整体</text></svg>`;
   document.getElementById("allCmp").innerHTML=cs;
 
   // 合并诊断表：延保失血 + 增值提升（触键分展）
@@ -2001,12 +2062,13 @@ function render(){
   document.getElementById("viewRP").style.display = BIZ==="rp"?"":"none";
   document.getElementById("viewKB").style.display = BIZ==="kb"?"":"none";
   document.getElementById("kpis").style.display = (BIZ==="kb"||BIZ==="rp")?"none":"";
-  if(BIZ==="kb"){ renderKB(); return; }
-  if(BIZ==="rp"){ renderRP(); return; }
+  if(BIZ==="kb"){ renderKB(); enhanceTables(); return; }
+  if(BIZ==="rp"){ renderRP(); enhanceTables(); return; }
   if(BIZ==="yb") renderYB();
   else if(BIZ==="zz") renderZZ();
   else renderAll();
   renderCrumbs();
+  enhanceTables();   // 项6/7：表格增强（排序/列调序/筛选），每次渲染后重放状态
 }
 function updateHero(){
   const keys=curMonthKeys();
@@ -2147,6 +2209,115 @@ document.getElementById("segOutlet").addEventListener("click",e=>{
 document.addEventListener("click",e=>{
   const b=e.target.closest(".drill-btn"); if(!b) return;
   drillTo(b.dataset.type, b.dataset.name);
+});
+
+// ============ 表格增强：表头排序 / 列拖拽调序 / 名称筛选（项6/7，事件委托，重渲染后持续有效） ============
+const ENH_TABLES=["ybDiag","zzDiag","hwDiag","allSummary","allDiagYB","allDiagZZ","rpMergedTable"];
+const tblSort={};   // {tableId:{col,dir}} 当前排序状态（渲染后重放）
+function enhNum(s){
+  const m=String(s).replace(/[^0-9.\-万%]/g,"");
+  if(!m || m==="—" || m==="-") return null;
+  const v=parseFloat(m);
+  if(isNaN(v)) return null;
+  return m.indexOf("万")>=0 ? v*10000 : v;
+}
+function enhVal(td){
+  const t=(td.textContent||td.innerText||"").trim();
+  return {t:t, n:enhNum(t)};
+}
+function enhSortTable(tb,col,dir){
+  const body=tb.querySelector("tbody"); if(!body) return;
+  const rows=[...body.querySelectorAll("tr")];
+  rows.sort((a,b)=>{
+    const A=a.children[col], B=b.children[col];
+    if(!A||!B) return 0;
+    const va=enhVal(A), vb=enhVal(B);
+    let c;
+    if(va.n!=null && vb.n!=null) c=va.n-vb.n;
+    else if(va.n!=null) c=-1; else if(vb.n!=null) c=1;
+    else c=String(va.t).localeCompare(String(vb.t),"zh");
+    return dir*c;
+  });
+  rows.forEach(r=>body.appendChild(r));
+}
+function enhMoveCol(tb,from,to){
+  if(from===to) return;
+  const head=tb.querySelector("thead tr"); if(!head) return;
+  const body=tb.querySelector("tbody");
+  const hs=[...head.children];
+  const [h]=hs.splice(from,1); hs.splice(to,0,h);
+  hs.forEach(x=>head.appendChild(x));
+  if(body) [...body.querySelectorAll("tr")].forEach(tr=>{
+    const cs=[...tr.children];
+    if(cs.length<=from && cs.length<=to) return;
+    const [c]=cs.splice(from,1); cs.splice(to,0,c);
+    cs.forEach(x=>tr.appendChild(x));
+  });
+  // 重放当前排序（列序变化后按新列序排序状态）
+  const st=tblSort[tb.id];
+  if(st && st.col>=0){ enhSortTable(tb, st.col, st.dir); }
+}
+function enhApplyFilter(id){
+  const wrap=document.getElementById(id) ? (document.getElementById(id).closest?document.getElementById(id).closest(".twrap"):null) : null;
+  if(!wrap) return;
+  const inp=wrap.querySelector(".tbl-flt"); if(!inp) return;
+  const q=(inp.value||"").trim();
+  const tb=document.getElementById(id); if(!tb) return;
+  const body=tb.querySelector("tbody"); if(!body) return;
+  [...body.querySelectorAll("tr")].forEach(tr=>{
+    const first=tr.children[0];
+    tr.style.display=(!q||(first&&(first.textContent||"").indexOf(q)>=0))?"":"none";
+  });
+}
+function enhanceTables(){   // 确保每个表容器有筛选框 + 重放排序/筛选状态（幂等）
+  ENH_TABLES.forEach(id=>{
+    const tb=document.getElementById(id); if(!tb) return;
+    const wrap=tb.closest? tb.closest(".twrap") : null; if(!wrap) return;
+    if(!wrap.querySelector(".tbl-flt")){
+      const inp=document.createElement("input");
+      inp.className="tbl-flt";
+      inp.placeholder="筛选名称…（输入即可过滤，支持办事处/网点名）";
+      inp.addEventListener("input", ()=>enhApplyFilter(id));
+      wrap.insertBefore(inp, wrap.firstChild);
+    }
+    const st=tblSort[id];
+    if(st && st.col>=0){ enhSortTable(tb, st.col, st.dir); }
+    enhApplyFilter(id);
+  });
+}
+// 表头点击排序（升/降切换）
+document.addEventListener("click",e=>{
+  const th=e.target.closest("th"); if(!th) return;
+  const tb=th.closest("table"); if(!tb || ENH_TABLES.indexOf(tb.id)<0) return;
+  if(e.target.closest("a,button")) return;   // 不拦截表头内交互元素
+  const col=[...th.parentNode.children].indexOf(th);
+  const key=tb.id;
+  const st=tblSort[key]||{col:-1,dir:1};
+  if(st.col===col) st.dir*=-1; else {st.col=col; st.dir=1;}
+  tblSort[key]=st;
+  tb.querySelectorAll("th").forEach(x=>x.classList.remove("srt-a","srt-d"));
+  th.classList.add(st.dir>0?"srt-a":"srt-d");
+  enhSortTable(tb,col,st.dir);
+});
+// 列拖拽调序（拖表头列左右移动）
+document.addEventListener("dragstart",e=>{
+  const th=e.target.closest("th"); if(!th) return;
+  const tb=th.closest("table"); if(!tb || ENH_TABLES.indexOf(tb.id)<0) return;
+  const col=[...th.parentNode.children].indexOf(th);
+  e.dataTransfer.setData("text/plain", tb.id+"|"+col);
+  e.dataTransfer.effectAllowed="move";
+  th.style.opacity=.4;
+});
+document.addEventListener("dragend",e=>{ const th=e.target.closest("th"); if(th) th.style.opacity=""; });
+document.addEventListener("dragover",e=>{ const th=e.target.closest("th"); if(th && th.closest("table")) { e.preventDefault(); e.dataTransfer.dropEffect="move"; } });
+document.addEventListener("drop",e=>{
+  const th=e.target.closest("th"); if(!th) return;
+  const tb=th.closest("table"); if(!tb) return;
+  const d=e.dataTransfer.getData("text/plain").split("|");
+  if(d[0]!==tb.id) return;
+  const from=+d[1], to=[...th.parentNode.children].indexOf(th);
+  enhMoveCol(tb,from,to);
+  e.preventDefault();
 });
 
 // 解决方案抽屉：遮罩关闭 + 关闭按钮 + 标签页切换（处方→解决方案 闭环跳转）
