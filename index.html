@@ -43,6 +43,9 @@ body{background:var(--bg);color:var(--ink);
 .seg button:last-child{border-right:none}
 .seg button:hover{background:#F0F4F9}
 .seg button.on{background:var(--blue);color:#fff;font-weight:600}
+/* 网点按钮：名称最多2行展示（超出省略），按钮固定2行高，组内保留横向滚动 */
+.seg#segOutlet button{white-space:normal;word-break:break-all;max-width:120px;min-width:58px;height:38px;padding:4px 8px;line-height:1.2;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-align:center}
 .sel{border:1px solid var(--line2);border-radius:7px;padding:6px 10px;font-size:12.5px;
   color:var(--ink);font-family:inherit;background:#fff;cursor:pointer}
 .spacer{flex:1}
@@ -293,7 +296,7 @@ td.drag-hint{background:#E8F0FA}
   </div>
   <div class="fgrp" id="fgOutlet" style="display:none"><span class="flab">网点</span>
     <input id="fltOutlet" class="tbl-flt" style="width:150px;margin-bottom:0" placeholder="筛选网点…">
-    <div class="seg" id="segOutlet" style="flex-wrap:wrap;overflow-x:visible">
+    <div class="seg" id="segOutlet" style="flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;max-width:100%">
       <button data-v="all" class="on">全部</button>
     </div>
   </div>
@@ -487,13 +490,15 @@ td.drag-hint{background:#E8F0FA}
   <div class="card" style="margin-top:14px">
     <h2>③ 月度趋势 · 成交率 / 完成率 / 单工单产出</h2>
     <div class="note">曲线图：创维延保成交率 vs 华为延保成交率（月度）；增值单工单产出（月度）。柱状图：延保/增值/整体完成率分开展示（月度，累计口径）。</div>
-    <div id="rpTrendCj" style="margin-bottom:12px"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px">
+      <div style="flex:1;min-width:290px" id="rpTrendCj"></div>
+      <div style="flex:1;min-width:290px" id="rpTrendPP"></div>
+    </div>
     <div style="display:flex;flex-wrap:wrap;gap:12px">
       <div style="flex:1;min-width:210px" id="rpTrendYb"></div>
       <div style="flex:1;min-width:210px" id="rpTrendZz"></div>
       <div style="flex:1;min-width:210px" id="rpTrendAll"></div>
     </div>
-    <div id="rpTrendPP" style="margin-top:12px"></div>
   </div>
   <div class="card" style="margin-top:14px">
     <h2>数据缺口标注 · 过程前移的治理目标</h2>
@@ -2096,15 +2101,17 @@ function renderRP(){
     const progGap=b.task*rangeTP-b.hui;                // 进度差额 = 任务×时间进度 − 回款
     const daily=remDays>0? taskGap/remDays : 0;        // 剩余日均需完成 = 任务差额 ÷ 剩余天数
     const cls=v=>v>=0?'gap-ok':'gap-bad';
+    const wan=v=>"¥"+(v/10000).toFixed(1)+"万";        // 单位统一：万元（1位小数）
+    const wanD=v=>"¥"+(v/10000).toFixed(2)+"万/日";    // 日均：万元（2位小数）
     bt+=`<tr>
       <td class="tl nm"><b>${b.name}</b></td>
       <td class="mono">${fmtM(b.task)}</td>
       <td class="mono">${fmtM(b.hui)}</td>
       <td class="mono">${fmtP(rate)}</td>
-      <td class="mono ${cls(taskGap)}">${fmtM(taskGap)}</td>
+      <td class="mono ${cls(taskGap)}">${wan(taskGap)}</td>
       <td class="mono ${cls(rateGap)}">${rateGap>=0?"+":""}${rateGap.toFixed(1)}%</td>
-      <td class="mono ${cls(progGap)}">${fmtM(progGap)}</td>
-      <td class="mono">${remDays>0? fmtM(daily)+" /日" : "—"}</td></tr>`;
+      <td class="mono ${cls(progGap)}">${wan(progGap)}</td>
+      <td class="mono">${remDays>0? wanD(daily) : "—"}</td></tr>`;
   });
   bt+=`</tbody>`;
   const bpEl=document.getElementById("bizProgress");
@@ -2113,32 +2120,32 @@ function renderRP(){
   // ---- 月度趋势图（③ 卡片）：成交率曲线 / 完成率柱状×3 / 单产曲线 ----
   const trendData=ma.map(m=>({k:parseInt(m.k.split("-")[1],10)+"月", ybCj:m.ybCj, hwCj:m.hwCj,
     ybZZ:m.ybZZ, zzZZ:m.zzZZ, allZZ:m.allZZ, zzPP:m.zzPP}));
-  const rpLine=(title,lines,fmt)=>{
+  const rpLine=(title,lines,fmt,W=340)=>{   // 两曲线图并排：默认半宽 340，字体缩小
     if(!lines[0].data.length) return `<div style="font-size:12px;color:var(--ink3);padding:10px 0">${title}：所选区间无数据。</div>`;
-    const W=680, H=210, mL=46, mR=12, mT=34, mB=26;
+    const H=190, mL=40, mR=10, mT=28, mB=24;
     const max=Math.max(...lines.flatMap(l=>l.data.map(p=>p.v)),0.0001)*1.15;
     const d0=lines[0].data, n=d0.length;
     const plotW=W-mL-mR, plotH=H-mT-mB;
     const x=i=> n<=1? (mL+plotW/2) : (mL+plotW*i/(n-1));
     const y=v=> mT+plotH*(1-v/max);
     let s=`<svg width="100%" viewBox="0 0 ${W} ${H}" role="img"><title>${title}</title>`;
-    s+=`<text x="10" y="16" fill="#1F3A5F" font-size="12" font-weight="600">${title}</text>`;
+    s+=`<text x="10" y="14" fill="#1F3A5F" font-size="10.5" font-weight="600">${title}</text>`;
     for(let i=0;i<=4;i++){ const yy=mT+plotH*i/4, v=max*(1-i/4);
       s+=`<line x1="${mL}" y1="${yy}" x2="${W-mR}" y2="${yy}" stroke="#EEF2F6" stroke-width="1"/>`;
-      s+=`<text x="${mL-6}" y="${yy+3.5}" text-anchor="end" fill="#8A96A3" font-size="9">${fmt(v)}</text>`; }
+      s+=`<text x="${mL-5}" y="${yy+3}" text-anchor="end" fill="#8A96A3" font-size="8">${fmt(v)}</text>`; }
     lines.forEach((l,li)=>{
       const d=l.data;
-      s+=`<polyline points="${d.map((p,i)=>x(i).toFixed(1)+","+y(p.v).toFixed(1)).join(" ")}" fill="none" stroke="${l.color}" stroke-width="2"/>`;
+      s+=`<polyline points="${d.map((p,i)=>x(i).toFixed(1)+","+y(p.v).toFixed(1)).join(" ")}" fill="none" stroke="${l.color}" stroke-width="1.8"/>`;
       d.forEach((p,i)=>{
-        s+=`<circle cx="${x(i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="3" fill="${l.color}"/>`;
-        s+=`<text x="${x(i).toFixed(1)}" y="${y(p.v)-6}" text-anchor="middle" fill="${l.color}" font-size="8.5">${fmt(p.v)}</text>`;
-        if(li===0) s+=`<text x="${x(i).toFixed(1)}" y="${H-8}" text-anchor="middle" fill="#5A6774" font-size="9.5">${p.k}</text>`;
+        s+=`<circle cx="${x(i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="2.4" fill="${l.color}"/>`;
+        s+=`<text x="${x(i).toFixed(1)}" y="${y(p.v)-5}" text-anchor="middle" fill="${l.color}" font-size="7.5">${fmt(p.v)}</text>`;
+        if(li===0) s+=`<text x="${x(i).toFixed(1)}" y="${H-7}" text-anchor="middle" fill="#5A6774" font-size="8.5">${p.k}</text>`;
       });
     });
     lines.forEach((l,i)=>{
-      const lgx=mL+10+i*170;
-      s+=`<line x1="${lgx}" y1="${H-20}" x2="${lgx+14}" y2="${H-20}" stroke="${l.color}" stroke-width="2.5"/>`;
-      s+=`<text x="${lgx+18}" y="${H-17}" fill="#5A6774" font-size="9.5">${l.name}</text>`;
+      const lgx=mL+8+i*150;
+      s+=`<line x1="${lgx}" y1="${H-18}" x2="${lgx+12}" y2="${H-18}" stroke="${l.color}" stroke-width="2.2"/>`;
+      s+=`<text x="${lgx+15}" y="${H-15}" fill="#5A6774" font-size="8.5">${l.name}</text>`;
     });
     return s+`</svg>`;
   };
