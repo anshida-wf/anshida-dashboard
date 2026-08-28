@@ -104,8 +104,7 @@ tbody tr:hover{background:#F7FAFD}
 .tbl-scroll{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:8px}
 .tbl-scroll thead th{position:sticky;top:0;z-index:2;box-shadow:0 1px 0 var(--line)}   /* 项1：表头固定，不随滑动条滚动 */
 .twrap{position:relative}
-.twrap table th,.twrap table td{white-space:nowrap}   /* 项2：表格字段不换行，超宽靠容器横向滚动 */
-.twrap table td.tl.nm{white-space:normal;word-break:break-all;min-width:110px;vertical-align:top}   /* 项2：网点/名称列过长换行展示 */
+.twrap table th,.twrap table td{white-space:nowrap}   /* 表格字段均不换行，超宽靠容器横向滚动 */
 .tbl-flt{width:230px;max-width:100%;border:1px solid var(--line2);border-radius:6px;padding:5px 10px;font-size:12px;margin-bottom:8px;font-family:inherit;color:var(--ink)}
 th{cursor:pointer;user-select:none}
 th.srt-a::after{content:" ▲";font-size:9px;opacity:.8}
@@ -275,10 +274,10 @@ td.drag-hint{background:#E8F0FA}
 <div class="bar">
   <div class="fgrp"><span class="flab">业务</span>
     <div class="seg" id="segBiz">
-      <button data-v="all" class="on">全部</button>
+      <button data-v="rp">目标与进度</button>
+      <button data-v="all" class="on">延保+增值过程</button>
       <button data-v="yb">彩电延保</button>
       <button data-v="zz">增值配件</button>
-      <button data-v="rp">结果与过程</button>
       <button data-v="kb">知识库</button>
     </div>
   </div>
@@ -293,7 +292,8 @@ td.drag-hint{background:#E8F0FA}
     </div>
   </div>
   <div class="fgrp" id="fgOutlet" style="display:none"><span class="flab">网点</span>
-    <div class="seg" id="segOutlet">
+    <input id="fltOutlet" class="tbl-flt" style="width:150px;margin-bottom:0" placeholder="筛选网点…">
+    <div class="seg" id="segOutlet" style="flex-wrap:wrap;overflow-x:visible">
       <button data-v="all" class="on">全部</button>
     </div>
   </div>
@@ -483,6 +483,17 @@ td.drag-hint{background:#E8F0FA}
     <h2>① 月度指标整合走势表 · 完成率 + 过程指标 + 每月结论诊断</h2>
     <div class="note">纵向按月份展开：完成率列为累计口径（N 月完成率 = 1~N 月累计回款 ÷ 累计任务），过程指标为领先指标（领先完成率 1~2 个月传导）。<b>「时间进度」「整体 vs 进度」两列已移除</b>，相关判定并入新增的「每月结论诊断」列（领先/落后幅度 + 主拖累线）。</div>
     <div class="twrap"><div class="tbl-scroll"><table class="mtable" id="rpMergedTable"></table></div></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h2>③ 月度趋势 · 成交率 / 完成率 / 单工单产出</h2>
+    <div class="note">曲线图：创维延保成交率 vs 华为延保成交率（月度）；增值单工单产出（月度）。柱状图：延保/增值/整体完成率分开展示（月度，累计口径）。</div>
+    <div id="rpTrendCj" style="margin-bottom:12px"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px">
+      <div style="flex:1;min-width:210px" id="rpTrendYb"></div>
+      <div style="flex:1;min-width:210px" id="rpTrendZz"></div>
+      <div style="flex:1;min-width:210px" id="rpTrendAll"></div>
+    </div>
+    <div id="rpTrendPP" style="margin-top:12px"></div>
   </div>
   <div class="card" style="margin-top:14px">
     <h2>数据缺口标注 · 过程前移的治理目标</h2>
@@ -2098,6 +2109,67 @@ function renderRP(){
   bt+=`</tbody>`;
   const bpEl=document.getElementById("bizProgress");
   if(bpEl) bpEl.innerHTML=bt;
+
+  // ---- 月度趋势图（③ 卡片）：成交率曲线 / 完成率柱状×3 / 单产曲线 ----
+  const trendData=ma.map(m=>({k:parseInt(m.k.split("-")[1],10)+"月", ybCj:m.ybCj, hwCj:m.hwCj,
+    ybZZ:m.ybZZ, zzZZ:m.zzZZ, allZZ:m.allZZ, zzPP:m.zzPP}));
+  const rpLine=(title,lines,fmt)=>{
+    if(!lines[0].data.length) return `<div style="font-size:12px;color:var(--ink3);padding:10px 0">${title}：所选区间无数据。</div>`;
+    const W=680, H=210, mL=46, mR=12, mT=34, mB=26;
+    const max=Math.max(...lines.flatMap(l=>l.data.map(p=>p.v)),0.0001)*1.15;
+    const d0=lines[0].data, n=d0.length;
+    const plotW=W-mL-mR, plotH=H-mT-mB;
+    const x=i=> n<=1? (mL+plotW/2) : (mL+plotW*i/(n-1));
+    const y=v=> mT+plotH*(1-v/max);
+    let s=`<svg width="100%" viewBox="0 0 ${W} ${H}" role="img"><title>${title}</title>`;
+    s+=`<text x="10" y="16" fill="#1F3A5F" font-size="12" font-weight="600">${title}</text>`;
+    for(let i=0;i<=4;i++){ const yy=mT+plotH*i/4, v=max*(1-i/4);
+      s+=`<line x1="${mL}" y1="${yy}" x2="${W-mR}" y2="${yy}" stroke="#EEF2F6" stroke-width="1"/>`;
+      s+=`<text x="${mL-6}" y="${yy+3.5}" text-anchor="end" fill="#8A96A3" font-size="9">${fmt(v)}</text>`; }
+    lines.forEach((l,li)=>{
+      const d=l.data;
+      s+=`<polyline points="${d.map((p,i)=>x(i).toFixed(1)+","+y(p.v).toFixed(1)).join(" ")}" fill="none" stroke="${l.color}" stroke-width="2"/>`;
+      d.forEach((p,i)=>{
+        s+=`<circle cx="${x(i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="3" fill="${l.color}"/>`;
+        s+=`<text x="${x(i).toFixed(1)}" y="${y(p.v)-6}" text-anchor="middle" fill="${l.color}" font-size="8.5">${fmt(p.v)}</text>`;
+        if(li===0) s+=`<text x="${x(i).toFixed(1)}" y="${H-8}" text-anchor="middle" fill="#5A6774" font-size="9.5">${p.k}</text>`;
+      });
+    });
+    lines.forEach((l,i)=>{
+      const lgx=mL+10+i*170;
+      s+=`<line x1="${lgx}" y1="${H-20}" x2="${lgx+14}" y2="${H-20}" stroke="${l.color}" stroke-width="2.5"/>`;
+      s+=`<text x="${lgx+18}" y="${H-17}" fill="#5A6774" font-size="9.5">${l.name}</text>`;
+    });
+    return s+`</svg>`;
+  };
+  const rpBar=(title,data,fmt,color)=>{
+    if(!data.length) return `<div style="font-size:12px;color:var(--ink3);padding:10px 0">${title}：所选区间无数据。</div>`;
+    const W=300, H=210, mL=44, mR=8, mT=34, mB=26;
+    const max=Math.max(...data.map(d=>d.v),0.0001)*1.15;
+    const plotW=W-mL-mR, plotH=H-mT-mB;
+    const bw=Math.min(34, plotW/data.length*0.55);
+    let s=`<svg width="100%" viewBox="0 0 ${W} ${H}" role="img"><title>${title}</title>`;
+    s+=`<text x="10" y="16" fill="#1F3A5F" font-size="12" font-weight="600">${title}</text>`;
+    for(let i=0;i<=4;i++){ const yy=mT+plotH*i/4, v=max*(1-i/4);
+      s+=`<line x1="${mL}" y1="${yy}" x2="${W-mR}" y2="${yy}" stroke="#EEF2F6" stroke-width="1"/>`;
+      s+=`<text x="${mL-5}" y="${yy+3}" text-anchor="end" fill="#8A96A3" font-size="8.5">${fmt(v)}</text>`; }
+    data.forEach((d,i)=>{
+      const cx=mL+plotW*(i+0.5)/data.length;
+      const h=plotH*d.v/max, yy=mT+plotH-h;
+      s+=`<rect x="${cx-bw/2}" y="${yy}" width="${bw}" height="${Math.max(h,1)}" rx="2" fill="${color}"/>`;
+      s+=`<text x="${cx}" y="${yy-4}" text-anchor="middle" fill="${color}" font-size="8.5">${fmt(d.v)}</text>`;
+      s+=`<text x="${cx}" y="${H-8}" text-anchor="middle" fill="#5A6774" font-size="9.5">${d.k}</text>`;
+    });
+    return s+`</svg>`;
+  };
+  document.getElementById("rpTrendCj").innerHTML=rpLine("创维 vs 华为 延保成交率（月度）",
+    [{name:"创维延保成交率",color:"#1F3A5F",data:trendData.map(d=>({k:d.k,v:d.ybCj}))},
+     {name:"华为延保成交率",color:"#C2410C",data:trendData.map(d=>({k:d.k,v:d.hwCj}))}], v=>fmtP(v));
+  document.getElementById("rpTrendYb").innerHTML=rpBar("延保完成率（月度）", trendData.map(d=>({k:d.k,v:d.ybZZ})), v=>fmtP(v), "#1F3A5F");
+  document.getElementById("rpTrendZz").innerHTML=rpBar("增值完成率（月度）", trendData.map(d=>({k:d.k,v:d.zzZZ})), v=>fmtP(v), "#0F6E56");
+  document.getElementById("rpTrendAll").innerHTML=rpBar("整体完成率（月度）", trendData.map(d=>({k:d.k,v:d.allZZ})), v=>fmtP(v), "#C2410C");
+  document.getElementById("rpTrendPP").innerHTML=rpLine("增值单工单产出（月度）",
+    [{name:"单工单增值产出",color:"#0F6E56",data:trendData.map(d=>({k:d.k,v:d.zzPP}))}], v=>"¥"+v.toFixed(1));
 }
 function render(){
   RXCTX=[];
@@ -2107,6 +2179,10 @@ function render(){
   document.getElementById("viewRP").style.display = BIZ==="rp"?"":"none";
   document.getElementById("viewKB").style.display = BIZ==="kb"?"":"none";
   document.getElementById("kpis").style.display = (BIZ==="kb"||BIZ==="rp")?"none":"";
+  // 目标与进度(rp)视图不展示网点筛选层级（数据为办事处级；其余视图按 rebuildOutletSeg 的 vis 恢复）
+  const fgO=document.getElementById("fgOutlet");
+  if(BIZ==="rp"){ if(fgO) fgO.style.display="none"; }
+  else if(fgO && fgO.dataset.vis) fgO.style.display=fgO.dataset.vis;
   if(BIZ==="kb"){ renderKB(); enhanceTables(); return; }
   if(BIZ==="rp"){ renderRP(); enhanceTables(); return; }
   if(BIZ==="yb") renderYB();
@@ -2183,9 +2259,23 @@ function rebuildOutletSeg(){
   const outs=[...new Set(pool.map(r=>r[5]))].filter(n=>n && !/^\d+$/.test(String(n).trim()) && String(n).trim()!=="广东").sort();
   seg.innerHTML='<button data-v="all" class="on">全部</button>';
   outs.forEach(o=>{ const b=document.createElement("button"); b.dataset.v=o; b.textContent=o; seg.appendChild(b); });
-  document.getElementById("fgOutlet").style.display=outs.length?"":"none";
+  const fgO=document.getElementById("fgOutlet");
+  if(fgO){ const vis=outs.length?"":"none"; fgO.style.display=vis; fgO.dataset.vis=vis; }
   OUTLET="all";
+  outletFilter();   // 重放网点筛选框
 }
+// 网点筛选框：按名称实时过滤按钮（项4）
+function outletFilter(){
+  const inp=document.getElementById("fltOutlet"); const seg=document.getElementById("segOutlet");
+  if(!inp||!seg) return;
+  const q=(inp.value||"").trim();
+  seg.querySelectorAll("button").forEach(b=>{
+    b.style.display=(!q || (b.textContent||"").indexOf(q)>=0) ? "" : "none";
+  });
+}
+document.addEventListener("input",e=>{
+  if(e.target && e.target.id==="fltOutlet") outletFilter();
+});
 
 // 办事处级快照：OFFICE/OUTLET 选中时，簇状图「大区内各办事处」对比数据源（恒全国口径，不随下钻丢失）
 let CMP_BASE=null;   // {RAW, RAW_Z, RAW_HW}（aggData 输出，全区间 87 办）
