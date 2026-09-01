@@ -584,7 +584,7 @@ td.drag-hint{background:#E8F0FA}
   ‑ <b>华为可挽回</b> = Σ 华为安装工单×(基准华为成交率−实际华为成交率)×华为延保均价（与「延保看板-华为专项」同算法）；<br>
   ‑ <b>增值可挽回</b> = Σ 工单量×(基准单工单产出−实际单工单产出)；<br>
   ‑ <b>整体可挽回</b> = 延保可挽回 ＋ 华为可挽回 ＋ 增值可挽回。</span><br>
-  <b>⑧ 时间进度</b> = 累计取值天数 ÷ 累计总天数（已完月按满月、未完月按实际取值天数混合；取值天数反推自「数据更新日」progress = (更新日−1) ÷ 当月天数）。<br>
+  <b>⑧ 时间进度</b> = 累计取值天数 ÷ 累计总天数（已完月按满月、未完月按实际取值天数混合；取值天数反推自「数据更新日」progress = (更新日−1) ÷ 当月天数；数据滞后跨月后，最新数据月按已完月满月计）。<br>
   <b>⑨ 进度差额（金额）</b> = (完成率 − 时间进度) × 对应任务金额 = 实际回款 − 计划回款，为正=领先进度、为负=落后进度。<br>
   <b>⑩ 日均工单量</b> = 工单量 ÷ 取值天数（已完月÷满月、未完月÷实际取值天数）。<br>
   <b>⑪ 三大结构比率</b>　占比0.5 = 多功能挂架 ÷(自备工单+0.5+带挂装工单)；占比1 =(普通+多功能挂架)÷(自备工单+带挂装工单)；保护器+8KHDMI占比 = 保护器HDMI ÷ 上门可售工单；华为挂架出库占比 = 华为高价值工单 ÷ 华为安装工单。<br>
@@ -623,9 +623,16 @@ function curMonthKeys(){
   return out;
 }
 function latestMonthKey(){const ks=Object.keys(DATA).sort(); return ks[ks.length-1];}
-// 未完月份判定：只有「最新数据月」才算未完（其余月份均已完，计满天数）。
+// 未完月份判定：仅当「最新数据月」仍是当前自然月才算未完（其余月份均已完，计满天数）。
 // 此前用「最新选中月」判定，会把已完的最后一月（如只选到7月）误当未完月，导致取值天数算成 snapshot 天数而非满月。
-function isUnfinishedMonth(k){ return k === latestMonthKey(); }
+// 跨月保护：数据滞后时（如 9 月看 8 月数据），最新数据月已成历史 → 按已完月满月计，
+//           避免源表 progress 缓存值（如 0）把取值天数退化成 1 天。
+function isUnfinishedMonth(k){
+  if(k!==latestMonthKey()) return false;
+  const now=new Date();
+  const cur=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+  return k>=cur;
+}
 // 单月取值天数：未完(最新数据)月 = round(progress × 当月天数)；已完月 = 当月总天数
 function monthValueDays(k){
   const p=k.split("-"); const y=parseInt(p[0],10), m=parseInt(p[1],10);
@@ -694,7 +701,8 @@ function curProgressInfo(){
   const prog=(last && last.progress) ? last.progress : 0;
   const p=lastKey.split("-"); const y=p[0], m=parseInt(p[1],10);
   const days=new Date(parseInt(y,10), m, 0).getDate();
-  const day=Math.round(prog*days);
+  // 跨月保护：最新数据月已完（数据滞后）→ 数据更新日取该月最后一天
+  const day=isUnfinishedMonth(lastKey) ? Math.round(prog*days) : days;
   return {prog:prog, y:y, m:m, day:day, days:days};
 }
 function progHint(){const i=curProgressInfo(); return i.y? ("数据更新至 "+i.y+"年"+i.m+"月"+i.day+"日") : "数据更新至最新月";}
@@ -2511,8 +2519,11 @@ function bootRender(){
 function authToken(){ try{ return localStorage.getItem("anshida_token")||""; }catch(e){ return ""; } }
 function authSave(t){ try{ localStorage.setItem("anshida_token",t); }catch(e){} }
 function authClear(){ try{ localStorage.removeItem("anshida_token"); }catch(e){} }
-function authLogout(){ authClear(); location.href=AUTH.api+"/api/logout"; }
-function goLogin(){ location.href=AUTH.api+"/api/wx/login?redirect="+encodeURIComponent(location.origin+location.pathname); }
+function authLogout(){ authClear(); if(AUTH.mode==="pwd"){ location.reload(); return; } location.href=AUTH.api+"/api/logout"; }
+function goLogin(){
+  if(AUTH.mode==="pwd"){ showPwdLogin(); return; }
+  location.href=AUTH.api+"/api/wx/login?redirect="+encodeURIComponent(location.origin+location.pathname);
+}
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
 function showFatal(msg){
   document.body.innerHTML='<div style="max-width:540px;margin:14vh auto;padding:26px 30px;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.12);font-family:-apple-system,\'Microsoft YaHei\',sans-serif;line-height:1.75">'
@@ -2525,6 +2536,7 @@ function renderUserBar(user, meta){
   const n = meta ? meta.officeCount : 0;
   el.innerHTML='<span class="ab-who">'+esc(user.name||'')+(user.title?' · '+esc(user.title):'')+'</span>'
     +'<span class="ab-scope">数据范围：<b>'+n+'</b> 个办事处'+(meta&&meta.regionCount?' / '+meta.regionCount+' 个大区':'')+'</span>'
+    +(AUTH.mode==="pwd"?'<a class="ab-out" href="javascript:showChangePwd(false)">改密</a>':'')
     +'<a class="ab-out" href="javascript:authLogout()">退出</a>';
   el.style.display="flex";
 }
@@ -2575,6 +2587,107 @@ async function demoLogin(userid){
     showFatal("无法连接本地后端（"+e.message+"）。请先在终端运行：node scripts/auth/auth_server.js");
   }
 }
+/* ===== 口令模式（账号+密码登录，不依赖企微可信域名）=====
+ * 流程：未登录 → 口令登录页 → 若 mustChange（初始密码）→ 强制改密页 → 取数渲染。
+ * 安全：密码仅提交给后端 scrypt 校验，前端不存密码；token 走 localStorage + HttpOnly Cookie 双通道。
+ */
+var BOOTED=false;   // 数据是否已加载（改密成功后决定是「继续取数」还是「轻提示」）
+function pwdShell(inner){
+  return '<div style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1F3A5F,#0F6E56);display:flex;align-items:center;justify-content:center;font-family:-apple-system,\'Microsoft YaHei\',sans-serif">'
+   +'<div style="background:#fff;border-radius:14px;padding:28px 32px;width:330px;box-shadow:0 12px 40px rgba(0,0,0,.35);text-align:center">'+inner+'</div></div>';
+}
+function pwdInput(id,ph,type,ac){
+  return '<input id="'+id+'" type="'+(type||"text")+'" placeholder="'+ph+'" autocomplete="'+ac+'" '
+   +'style="display:block;width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #ccd;border-radius:8px;font-size:14px;margin-bottom:10px;text-align:left" />';
+}
+function showPwdLogin(){
+  var old=document.getElementById("pwdLogin"); if(old) old.remove();
+  var box=document.createElement("div"); box.id="pwdLogin";
+  box.innerHTML=pwdShell(
+     '<h3 style="margin:0 0 6px;color:#1F3A5F;font-size:18px">安时达增值延保诊断看板</h3>'
+    +'<p style="margin:0 0 18px;color:#555;font-size:12.5px">请输入账号与密码登录</p>'
+    +pwdInput("pwdUser","账号（企微账号）","text","username")
+    +pwdInput("pwdPass","密码","password","current-password")
+    +'<label style="display:block;text-align:left;font-size:12px;color:#5A6774;margin:2px 0 14px"><input type="checkbox" id="pwdRemember" /> 记住我（30 天内免登录）</label>'
+    +'<button onclick="pwdDoLogin()" style="width:100%;padding:11px;border:0;border-radius:8px;background:#2E5C8A;color:#fff;font-size:15px;cursor:pointer">登 录</button>'
+    +'<div id="pwdErr" style="color:#A32D2D;font-size:12px;min-height:16px;margin-top:8px"></div>');
+  document.body.appendChild(box);
+  var eu=document.getElementById("pwdUser"), ep=document.getElementById("pwdPass");
+  if(ep) ep.addEventListener("keydown",function(e){ if(e.key==="Enter") pwdDoLogin(); });
+  if(eu) eu.addEventListener("keydown",function(e){ if(e.key==="Enter") document.getElementById("pwdPass").focus(); });
+  if(eu) eu.focus();
+}
+async function pwdDoLogin(){
+  var err=document.getElementById("pwdErr");
+  var u=(document.getElementById("pwdUser").value||"").trim();
+  var p=document.getElementById("pwdPass").value||"";
+  var rem=!!(document.getElementById("pwdRemember")||{}).checked;
+  if(!u||!p){ if(err) err.textContent="请输入账号和密码"; return; }
+  if(err) err.textContent="";
+  try{
+    var r=await fetch(AUTH.api+"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({userid:u,password:p,remember:rem})});
+    var j={}; try{ j=await r.json(); }catch(e){}
+    if(r.ok && j.token){
+      authSave(j.token);
+      var el=document.getElementById("pwdLogin"); if(el) el.remove();
+      if(j.mustChange){ showChangePwd(true); }   // 初始密码 → 强制先改密
+      else{ startRemote(); }
+    }else{
+      if(err) err.textContent=j.error||("登录失败（HTTP "+r.status+"）");
+    }
+  }catch(e){
+    if(err) err.textContent="无法连接服务器："+e.message;
+  }
+}
+function showChangePwd(force){
+  var old=document.getElementById("pwdChange"); if(old) old.remove();
+  var box=document.createElement("div"); box.id="pwdChange";
+  box.innerHTML=pwdShell(
+     '<h3 style="margin:0 0 6px;color:#1F3A5F;font-size:18px">修改密码</h3>'
+    +'<p style="margin:0 0 18px;color:#555;font-size:12.5px;line-height:1.6">'+(force
+        ?'首次登录请先修改初始密码<br>新密码至少 8 位，需包含字母和数字'
+        :'新密码至少 8 位，需包含字母和数字')+'</p>'
+    +pwdInput("cpOld","原密码","password","current-password")
+    +pwdInput("cpNew","新密码","password","new-password")
+    +pwdInput("cpNew2","再次输入新密码","password","new-password")
+    +(force?'':'<p style="text-align:right;margin:2px 0 10px"><a href="javascript:void(0)" onclick="var b=document.getElementById(\'pwdChange\');if(b)b.remove()" style="font-size:12px;color:#7A8794;text-decoration:none">取消</a></p>')
+    +'<button onclick="pwdDoChange()" style="width:100%;padding:11px;border:0;border-radius:8px;background:#2E5C8A;color:#fff;font-size:15px;cursor:pointer">保存新密码</button>'
+    +'<div id="cpErr" style="color:#A32D2D;font-size:12px;min-height:16px;margin-top:8px"></div>');
+  document.body.appendChild(box);
+  var e1=document.getElementById("cpNew2");
+  if(e1) e1.addEventListener("keydown",function(e){ if(e.key==="Enter") pwdDoChange(); });
+  var e0=document.getElementById("cpOld"); if(e0) e0.focus();
+}
+async function pwdDoChange(){
+  var err=document.getElementById("cpErr");
+  var o=document.getElementById("cpOld").value||"";
+  var n=document.getElementById("cpNew").value||"";
+  var n2=document.getElementById("cpNew2").value||"";
+  if(!o||!n){ if(err) err.textContent="请填写原密码和新密码"; return; }
+  if(n!==n2){ if(err) err.textContent="两次输入的新密码不一致"; return; }
+  if(n.length<8 || !/[a-zA-Z]/.test(n) || !/[0-9]/.test(n)){ if(err) err.textContent="新密码至少 8 位，且同时包含字母和数字"; return; }
+  if(err) err.textContent="";
+  var tk=authToken();
+  if(!tk){ authClear(); goLogin(); return; }
+  try{
+    var r=await fetch(AUTH.api+"/api/change-password",{method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+tk},
+      body:JSON.stringify({oldPassword:o,newPassword:n})});
+    var j={}; try{ j=await r.json(); }catch(e){}
+    if(r.ok && j.token){
+      authSave(j.token);   // 改密后 token 已重签，旧 token 失效前无缝续期
+      var b=document.getElementById("pwdChange"); if(b) b.remove();
+      if(!BOOTED){ startRemote(); } else { alert("密码修改成功"); }
+    }else if(r.status===401){
+      authClear(); goLogin();
+    }else{
+      if(err) err.textContent=j.error||("修改失败（HTTP "+r.status+"）");
+    }
+  }catch(e){
+    if(err) err.textContent="无法连接服务器："+e.message;
+  }
+}
 async function startRemote(){
   const hash = location.hash || "";
   // 企微回调用 hash 带回 token（避免落进服务器访问日志）
@@ -2601,12 +2714,15 @@ async function startRemote(){
       YEAR=last.split("-")[0]; M_START=parseInt(last.split("-")[1],10); M_END=M_START; }
     renderUserBar(j.user, d.meta);
     bootRender();
+    BOOTED=true;
+    // 口令模式：仍在用初始密码 → 强制引导改密（数据已加载，改密页为遮罩）
+    if(AUTH.mode==="pwd" && j.user && j.user.mustChange){ showChangePwd(true); }
   }catch(e){
     showFatal("无法连接数据服务："+e.message+"。请在企业微信内打开，或联系管理员。");
   }
 }
 
-if(AUTH.mode==="remote" || AUTH.mode==="demo"){ startRemote(); } else { bootRender(); }
+if(AUTH.mode==="remote" || AUTH.mode==="demo" || AUTH.mode==="pwd"){ startRemote(); } else { bootRender(); }
 </script>
 <script>
 (function(){
