@@ -985,7 +985,15 @@ function benchmark(rows){
 function bmOf(keys){
   if(!NATIONAL_BM) return null;
   let yc=0,yp=0,zp=0,hc=0,n=0;
-  for(const k of (keys||[])){ const b=NATIONAL_BM[k]; if(!b||!isFinite(b.ybC)) continue; yc+=b.ybC; yp+=b.ybP; zp+=b.zzPP; hc+=b.hwC; n++; }
+  for(const k of (keys||[])){
+    const b=NATIONAL_BM[k]; if(!b) continue;
+    // 按当前基准档位取服务端对应的全国基准（三档均由服务端按全量 87 办预聚合，恒不随 scope 变化）
+    const bb = BASE==="avg" ? {ybC:b.avgYbC, ybP:b.avgYbP, zzPP:b.avgZzPP, hwC:b.avgHwC}
+             : BASE==="best"? {ybC:b.bestYbC, ybP:b.bestYbP, zzPP:b.bestZzPP, hwC:b.bestHwC}
+             : b;   // p75（全国前25%）= 平铺键，向后兼容旧服务端
+    const fb = !isFinite(bb.ybC) ? b : bb;   // 旧服务端无 avg/best 键时回落 p75
+    if(!fb||!isFinite(fb.ybC)) continue; yc+=fb.ybC; yp+=fb.ybP; zp+=fb.zzPP; hc+=fb.hwC; n++;
+  }
   if(!n) return null;
   return {ybC:yc/n, ybP:yp/n, zzPP:zp/n, hwC:hc/n};
 }
@@ -2588,7 +2596,7 @@ async function demoLogin(userid){
   }
 }
 /* ===== 口令模式（账号+密码登录，不依赖企微可信域名）=====
- * 流程：未登录 → 口令登录页 → 若 mustChange（初始密码）→ 强制改密页 → 取数渲染。
+ * 流程：未登录 → 口令登录页 → 取数渲染（首登不强制改密，改密走身份条入口）。
  * 安全：密码仅提交给后端 scrypt 校验，前端不存密码；token 走 localStorage + HttpOnly Cookie 双通道。
  */
 var BOOTED=false;   // 数据是否已加载（改密成功后决定是「继续取数」还是「轻提示」）
@@ -2631,8 +2639,7 @@ async function pwdDoLogin(){
     if(r.ok && j.token){
       authSave(j.token);
       var el=document.getElementById("pwdLogin"); if(el) el.remove();
-      if(j.mustChange){ showChangePwd(true); }   // 初始密码 → 强制先改密
-      else{ startRemote(); }
+      startRemote();   // 首登不强制改密（2026-09-01），改密走身份条「改密」入口
     }else{
       if(err) err.textContent=j.error||("登录失败（HTTP "+r.status+"）");
     }
@@ -2715,8 +2722,7 @@ async function startRemote(){
     renderUserBar(j.user, d.meta);
     bootRender();
     BOOTED=true;
-    // 口令模式：仍在用初始密码 → 强制引导改密（数据已加载，改密页为遮罩）
-    if(AUTH.mode==="pwd" && j.user && j.user.mustChange){ showChangePwd(true); }
+    // 首次登录不强制改密（姐姐决策 2026-09-01）：保留身份条「改密」入口，自行决定是否修改
   }catch(e){
     showFatal("无法连接数据服务："+e.message+"。请在企业微信内打开，或联系管理员。");
   }
