@@ -610,6 +610,15 @@ let RAW=[], RAW_Z=[], RAW_HW=[];
 let REG_AGG = null;
 let RAWR=null, RAWZR=null, RAWHR=null;   // 大区级区间聚合结果（aggRegData 输出）
 let ALLOWED_REGS = null;                 // 本账号可下钻的大区集合（null=不限，本地模式）
+// 第16轮：本账号权限范围（后端下发，形如 hq / region:东北 / office:深圳）。本地内嵌模式恒 "hq"。
+let SCOPE = "hq";
+function scopeKind(){ return SCOPE==="hq" ? "hq" : String(SCOPE).split(":")[0]; }
+function scopeTarget(){ return String(SCOPE).split(":").slice(1).join(":"); }
+function isHQ(){ return scopeKind()==="hq"; }
+// 簇状图实体源（需求2）：hq/大区权限 + 未选办事处 → 全国各大区；办事处权限 → 大区内各办事处
+function chartUseNational(){ return OFFICE==="all" && scopeKind()!=="office" && !!RAWR; }
+// 汇总表实体源（需求1）：仅 hq 在「全部」层级才读服务端全国大区聚合行，其余一律走本 scope 数据
+function summaryUseNational(){ return isHQ() && REG==="all" && OFFICE==="all" && !!RAWR && !!RAWZR && !!RAWHR; }
 let G={nM:1};
 // 远程模式（企微版）：下方两者由服务端下发；本地模式 NATIONAL_BM=null、AUTH.mode="local"，行为完全不变
 let NATIONAL_BM = null;   // {"2026-08":{ybC,ybP,zzPP,hwC,hwP,...}} 全国预聚合基准
@@ -1159,7 +1168,7 @@ function renderYB(){
   if(cmpIsOff){
     ents=officesOfReg(curOfficeReg()).map(o=>({label:o.name, cc:o.cc, p:o.p}));
     cmpScopeTxt="大区内各办事处";
-  } else if(RAWR){   // 需求4：服务端大区聚合行，恒全国 13 大区（大区/办权限账号也有全国对比上下文）
+  } else if(chartUseNational()){   // 第16轮（需求2）：hq/大区权限看全国各大区；办事处权限走上面的「大区内各办事处」
     ents=RAWR.map(r=>{const y=rowOf(r); return {label:y.name, cc:y.cc, p:y.p};});
     cmpScopeTxt="各大区";
   } else {
@@ -1295,7 +1304,7 @@ function renderHW(){
   if(OFFICE!=="all"){
     items=officesOfReg(curOfficeReg()).map(o=>({label:o.name,val:o.hwCj}));
     cmpTitle="大区内各办事处 华为成交率（加权）";
-  } else if(RAWHR){   // 需求4：服务端大区聚合行，恒全国 13 大区
+  } else if(chartUseNational() && RAWHR){   // 第16轮（需求2）：hq/大区权限看全国各大区
     items=RAWHR.map(r=>({label:r[0],val:r[2]}));    cmpTitle="各大区 华为成交率（加权）";
   } else {
     items=agg.map(a=>({label:a.reg,val:a.cj}));
@@ -1344,7 +1353,7 @@ function ratioData(field){
   if(OFFICE!=="all"){
     // 办事处/网点层 → 大区内各办事处（调整4）
     items=officesOfReg(curOfficeReg()).map(o=>({label:o.name,ac:o.ac,ad:o.ad,ai:o.ai,gz:o.gz,zb:o.zb,gong:o.zzGong}));
-  } else if(RAWZR){   // 需求4：服务端大区聚合行，恒全国 13 大区
+  } else if(chartUseNational() && RAWZR){   // 第16轮（需求2）：hq/大区权限看全国各大区
     items=RAWZR.map(r=>{const z=rowOfZZ(r);
       return {label:z.name,ac:z.ac,ad:z.ad,ai:z.ai,gz:z.gz,zb:z.zb,gong:z.gong};});
   } else {
@@ -1408,7 +1417,7 @@ function renderZZ(){
   if(OFFICE!=="all"){
     cmpItems=officesOfReg(curOfficeReg()).map(o=>{const H=o.zzHui,Gg=o.zzGong;return {label:o.name,val:Gg>0?H/Gg:0};});
     cmpScopeTxt="大区内各办事处";
-  } else if(RAWZR){   // 需求4：服务端大区聚合行，恒全国 13 大区
+  } else if(chartUseNational() && RAWZR){   // 第16轮（需求2）：hq/大区权限看全国各大区
     cmpItems=RAWZR.map(r=>{const z=rowOfZZ(r); return {label:z.name, val:z.gong>0?z.hui/z.gong:0};});
     cmpScopeTxt="各大区";
   } else {
@@ -1517,8 +1526,9 @@ function renderZZ(){
 // 需求1：延保增值可挽回汇总表（合并诊断表上方）
 function renderSummary(){
   const nM=G.nM, tp=timeProgress();
-  // 需求4：全国层级（REG=all & OFFICE=all）优先用服务端大区聚合行——大区/办权限账号也能看到 13 大区汇总
-  const useRegRows = REG==="all" && OFFICE==="all" && RAWR && RAWZR && RAWHR;
+  // 第16轮（需求1 权限分离）：仅 hq 账号在「全部」层级读服务端全国大区聚合行；
+  // 大区权限走本大区各办事处、办事处权限只走本办——他人数据永不落到汇总表。
+  const useRegRows = summaryUseNational();
   const ybAll=(useRegRows?RAWR:RAW).map(rowOf);
   const zzAll=(useRegRows?RAWZR:RAW_Z).map(rowOfZZ);
   const hwAll=(useRegRows?RAWHR:RAW_HW).map(r=>({name:r[0],reg:r[1],cj:r[2],gong:r[4],hui:r[5],price:r[6]}));
@@ -1667,7 +1677,7 @@ function renderAll(){
   // 双线达成对比：延保完成率（加权）+ 增值完成率 + 整体完成率（调整2：加整体；调整4：层级联动）
   function dualEnts(){
     if(OFFICE==="all"){
-      if(RAWR && RAWZR){   // 需求4：远程模式用服务端大区聚合行，恒全国 13 大区
+      if(chartUseNational() && RAWZR){   // 第16轮（需求2）：hq/大区权限看全国各大区
         const zmap={}; RAWZR.forEach(r=>{zmap[r[0]]=rowOfZZ(r);});
         return RAWR.map(r=>{const y=rowOf(r), z=zmap[r[0]]||{};
           return {label:r[0], ybZZ:y.meta[0], zzZZ:z.zz||0, allZZ:y.meta[5]>0?y.meta[6]/y.meta[5]:0};});
@@ -2362,12 +2372,37 @@ function crumbGo(lvl){
   else if(lvl===2){ OUTLET="all"; setSeg("segOutlet","all"); }
   applyFilters();   // 面包屑回退同样需要按新粒度重建 RAW
 }
+// ===== 第16轮：按账号 scope 锁定下钻层级（物理隔离的前端兜底）=====
+// hq        → 不锁，可自由切换 13 大区 / 各办事处
+// region:X  → REG 恒锁 X（可点「全部」看全国大区对比，但汇总表/诊断表只出本大区）
+// office:Y  → REG 锁所属大区 + OFFICE 恒锁 Y（只能看自己）
+function applyScopeLock(){
+  const k=scopeKind();
+  if(k==="region"){
+    const t=scopeTarget();
+    if(t && (!ALLOWED_REGS || !ALLOWED_REGS.length || ALLOWED_REGS.includes(t))) REG=t;
+  } else if(k==="office"){
+    const t=scopeTarget();
+    if(t){
+      const hit=Object.values(DATA).map(m=>(m.raw||[]).find(r=>r[0]===t)).find(Boolean);
+      if(hit && hit[1]) REG=hit[1];
+      OFFICE=t;
+    }
+  }
+  syncSegUI();
+}
+// 按钮组选中态与当前 REG/OFFICE 对齐（锁定后按钮高亮才不会错位）
+function syncSegUI(){
+  document.querySelectorAll("#segReg button").forEach(b=>b.classList.toggle("on", b.dataset.v===REG));
+  document.querySelectorAll("#segOffice button").forEach(b=>b.classList.toggle("on", b.dataset.v===OFFICE));
+}
+
 function rebuildOfficeSeg(){
   const seg=document.getElementById("segOffice"); if(!seg) return;
   const all=outletRows();
   const pool=REG==="all"?all:all.filter(r=>r[3]===REG);
   const offs=[...new Set(pool.map(r=>r[4]))].filter(Boolean).sort();
-  seg.innerHTML='<button data-v="all" class="on">全部</button>';
+  seg.innerHTML=(scopeKind()==="office")?"":'<button data-v="all" class="on">全部</button>';
   offs.forEach(o=>{ const b=document.createElement("button"); b.dataset.v=o; b.textContent=o; seg.appendChild(b); });
   document.getElementById("fgOffice").style.display=offs.length?"":"none";
   OFFICE="all"; rebuildOutletSeg();
@@ -2383,6 +2418,7 @@ function rebuildOutletSeg(){
   if(fgO){ const vis=outs.length?"":"none"; fgO.style.display=vis; fgO.dataset.vis=vis; }
   OUTLET="all";
   outletFilter();   // 重放网点筛选框
+  applyScopeLock(); // 第16轮：重建按钮组后按 scope 复位 REG/OFFICE（防止被 "all" 冲掉）
 }
 // 网点筛选框：按名称实时过滤按钮（项4）
 function outletFilter(){
@@ -2403,7 +2439,13 @@ function applyFilters(){
   aggData(curMonthKeys());                       // 恒先聚办事处级（全量，供快照/簇状图）
   aggRegData(curMonthKeys());                    // 需求4：大区级聚合行同步刷新
   if(OFFICE==="all"){ CMP_BASE=null; }
-  else { CMP_BASE={RAW:RAW,RAW_Z:RAW_Z,RAW_HW:RAW_HW}; aggDataOutlet(curMonthKeys()); }  // 主视图联动到网点粒度
+  else {
+    const snap={RAW:RAW,RAW_Z:RAW_Z,RAW_HW:RAW_HW};
+    aggDataOutlet(curMonthKeys());   // 主视图联动到网点粒度
+    // 第16轮兜底：该办未纳入网点表（或网点数据缺失）时回退办事处级，避免整页空白
+    if(!RAW.length){ RAW=snap.RAW; RAW_Z=snap.RAW_Z; RAW_HW=snap.RAW_HW; CMP_BASE=null; }
+    else { CMP_BASE=snap; }
+  }
   updateHero(); render();
 }
 
@@ -2442,9 +2484,12 @@ aggData(curMonthKeys());
 function rebuildRegSeg(){
   const seg=document.getElementById("segReg"); if(!seg) return;
   seg.innerHTML="";
-  const allBtn=document.createElement("button");
-  allBtn.dataset.v="all"; allBtn.textContent="全部"; allBtn.className="on";
-  seg.appendChild(allBtn);
+  // 第16轮：办事处权限账号不给「全部」入口（层级恒锁在本大区/本办）
+  if(scopeKind()!=="office"){
+    const allBtn=document.createElement("button");
+    allBtn.dataset.v="all"; allBtn.textContent="全部"; allBtn.className=(REG==="all"?"on":"");
+    seg.appendChild(allBtn);
+  }
   const regs=[...new Set(Object.values(DATA).flatMap(m=>m.raw.map(r=>r[1])))];
   regs.forEach(rg=>{
     const b=document.createElement("button");
@@ -2803,12 +2848,15 @@ async function startRemote(){
     NATIONAL_BM = d.benchmark || null;                       // 全国基准（服务端预聚合，恒全量）
     REG_AGG = d.regAgg || null;                              // 需求4：大区级聚合行（簇状图全国上下文）
     ALLOWED_REGS = (d.meta && d.meta.regions && d.meta.regions.length) ? d.meta.regions : null;
+    SCOPE = (j.user && j.user.scope) || "hq";   // 第16轮：权限范围（hq / region:X / office:Y）
     const ks = Object.keys(DATA).sort();
     if(ks.length){ const last=ks[ks.length-1];
       YEAR=last.split("-")[0]; M_START=parseInt(last.split("-")[1],10); M_END=M_START; }
     renderUserBar(j.user, d.meta);
     rebuildRegSeg();          // 需求1：数据到位后重建 13 大区按钮组（此前登录后永远只有「全部」）
+    applyScopeLock();         // 第16轮：按 scope 锁定 REG/OFFICE，再渲染（保证汇总表/图表不越权）
     bootRender();
+    if(OFFICE!=="all") applyFilters();   // 办事处锁定态：联动到网点粒度（无网点数据会自动回退办事处级）
     BOOTED=true;
     // 首次登录不强制改密（姐姐决策 2026-09-01）：保留身份条「改密」入口，自行决定是否修改
   }catch(e){
